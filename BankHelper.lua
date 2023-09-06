@@ -1,6 +1,6 @@
 script_name("BankHelper")
 script_version_number(229)
-script_version("6.1")
+script_version("6")
 script_authors("Andrew_Medverson")
 local requests = require 'requests'
 local sampev = require "lib.samp.events"
@@ -157,12 +157,12 @@ function main()
         end
         if theme.v == 0 then
             apply_custom_style()
-        end
-        if theme.v == 1 then
+        elseif theme.v == 1 then
             redTheme()
-        end
-        if theme.v == 2 then
+        elseif theme.v == 2 then
             blackOrangeTheme()
+        elseif theme.v == 3 then
+            greyTheme()
         end
         if sampTextdrawIsExists(2061) then
             _, _, eat, _ = sampTextdrawGetBoxEnabledColorAndSize(2061)
@@ -182,22 +182,19 @@ function main()
                         if notf_pokushal.v then
                             vkrequest('Вы покушали чипсы. Ваша сытость: ' .. math.floor(eat1))
                         end
-                    end
-                    if eatmetod.v == 1 then
+                    elseif eatmetod.v == 1 then
                         sampSendChat('/jmeat')
                         wait(4000)
                         if notf_pokushal.v then
                             vkrequest('Вы покушали оленину. Ваша сытость: ' .. math.floor(eat1))
                         end
-                    end
-                    if eatmetod.v == 2 then
+                    elseif eatmetod.v == 2 then
                         sampSendChat('/meatbag')
                         wait(4000)
                         if notf_pokushal.v then
                             vkrequest('Вы покушали мясо с мешка. Ваша сытость: ' .. math.floor(eat1))
                         end
-                    end
-                    if eatmetod.v == 3 then
+                    elseif eatmetod.v == 3 then
                         sampSendChat('/home')
                         wait(900)
                         sampSendDialogResponse(174, 1, 1, false)
@@ -209,15 +206,13 @@ function main()
                         if notf_pokushal.v then
                             vkrequest('Вы покушали с дома. Ваша сытость: ' .. math.floor(eat1))
                         end
-                    end
-                    if eatmetod.v == 4 then
+                    elseif eatmetod.v == 4 then
                         sampSendClickTextdraw(648)
                         wait(4000)
                         if notf_pokushal.v then
                             vkrequest('Вы покушали еду с расстояния. Ваша сытость: ' .. math.floor(eat1))
                         end
-                    end
-                    if eatmetod.v == 5 then
+                    elseif eatmetod.v == 5 then
                         sampSendChat('/jfish')
                         wait(4000)
                         if notf_pokushal.v then
@@ -430,10 +425,11 @@ function imgui.OnDrawFrame()
         menu = 2
     end
 
-    if imgui.MenuItem(u8 'О скрипте/Обновления') then
+    if imgui.MenuItem(u8 'VK уведомления') then
         menu = 3
     end
-    if imgui.MenuItem(u8 'VK notf') then
+
+    if imgui.MenuItem(u8 'О скрипте/Обновления') then
         menu = 4
     end
     imgui.EndMenuBar()
@@ -503,8 +499,9 @@ function imgui.OnDrawFrame()
         if imgui.Button(u8 'Сохранить все настройки', imgui.ImVec2(580, 30)) then
             saveCFG()
         end
-    end
-    if menu == 2 then
+    elseif menu == 2 then
+        imgui.Checkbox(u8 'Не отправлять сообщения в чат', silentMode)
+        imgui.Separator()
         imgui.Checkbox(u8 'Автоеда ', autokushat)
         if autokushat.v then
             imgui.Combo(u8 'Выбор способа еды', eatmetod, metod, -1)
@@ -540,46 +537,7 @@ function imgui.OnDrawFrame()
             inicfg.save(mainIni, 'auto_pd.ini')
             sampAddChatMessage('{00FF00}[BankHelper]{FFA500}Сохранил настройки автоеды/автохила', -1)
         end
-    end
-    if menu == 3 then
-        imgui.SetCursorPosX(240)
-        imgui.TextColored(imgui.ImVec4(0, 143, 0, 1), u8 'Author  -  GovnoCode.lua ')
-        if imgui.Button(u8 'Тема на BlastHack', imgui.ImVec2(580, 30)) then
-            os.execute('explorer https://www.blast.hk/threads/52319/')
-        end
-        if imgui.Button(u8 'Группа VK', imgui.ImVec2(580, 30)) then
-            os.execute('explorer https://vk.com/govnocode_lua')
-        end
-        if imgui.Button(u8 'Восстановить все настройки с конфига', imgui.ImVec2(580, 30)) then
-            vosstanovleniecfg()
-        end
-        imgui.Text(u8 'Выбор темы меню: ')
-        imgui.PushItemWidth(450)
-        imgui.SameLine()
-        if imgui.Combo(u8 '', theme, thememetod, -1) then
-            mainIni.config.theme = theme.v
-            inicfg.save(mainIni, 'auto_pd.ini')
-        end
-        if imgui.Button(u8 'Проверить обновление !', imgui.ImVec2(580, 30)) then
-            autoupdate("https://gist.githubusercontent.com/Andrey281/0b7e3f7707b2479db3f920d382a0385a/raw/", '[' .. string.upper(thisScript().name) .. ']: ', "http://vk.com/andreyneya")
-        end
-        --imgui.BeginChild("##new", imgui.ImVec2(580, 300), true, imgui.WindowFlags.NoScrollbar)
-        --imgui.Text(u8'История обновлений: ')
-        if imgui.Button(u8 'История обновлений', imgui.ImVec2(580, 30)) then
-            imgui.OpenPopup('##storychange')
-        end
-        if imgui.BeginPopupModal('##storychange', true, imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoResize) then
-            imgui.Text(new)
-            local wid = imgui.GetWindowWidth()
-            imgui.SetCursorPosX(wid / 2 - 50)
-            if imgui.Button(u8 'Закрыть', imgui.ImVec2(100, 30)) then
-                imgui.CloseCurrentPopup()
-            end
-            imgui.EndPopup()
-        end
-        --imgui.EndChild()
-    end
-    if menu == 4 then
+    elseif menu == 3 then
         if imgui.Button(u8 'Как это все настроить блин ?', imgui.ImVec2(580, 30)) then
             imgui.OpenPopup('##VK')
         end
@@ -618,6 +576,42 @@ function imgui.OnDrawFrame()
             mainIni.vk.group_id = group_id.v
             inicfg.save(mainIni, 'auto_pd.ini')
             sampAddChatMessage('{00FF00}[BankHelper]{FFA500}Сохранил настройки уведомлений для VK', -1)
+        end
+    elseif menu == 4 then
+        imgui.SetCursorPosX(240)
+        imgui.TextColored(imgui.ImVec4(0, 143, 0, 1), u8 'Author  -  GovnoCode.lua ')
+        if imgui.Button(u8 'Тема на BlastHack', imgui.ImVec2(580, 30)) then
+            os.execute('explorer https://www.blast.hk/threads/52319/')
+        end
+        if imgui.Button(u8 'Группа VK', imgui.ImVec2(580, 30)) then
+            os.execute('explorer https://vk.com/govnocode_lua')
+        end
+        if imgui.Button(u8 'Восстановить все настройки с конфига', imgui.ImVec2(580, 30)) then
+            vosstanovleniecfg()
+        end
+        imgui.Text(u8 'Выбор темы меню: ')
+        imgui.PushItemWidth(450)
+        imgui.SameLine()
+        if imgui.Combo(u8 '', theme, thememetod, -1) then
+            mainIni.config.theme = theme.v
+            inicfg.save(mainIni, 'auto_pd.ini')
+        end
+        if imgui.Button(u8 'Проверить обновление !', imgui.ImVec2(580, 30)) then
+            autoupdate("https://gist.githubusercontent.com/Andrey281/0b7e3f7707b2479db3f920d382a0385a/raw/", '[' .. string.upper(thisScript().name) .. ']: ', "http://vk.com/andreyneya")
+        end
+        --imgui.BeginChild("##new", imgui.ImVec2(580, 300), true, imgui.WindowFlags.NoScrollbar)
+        --imgui.Text(u8'История обновлений: ')
+        if imgui.Button(u8 'История обновлений', imgui.ImVec2(580, 30)) then
+            imgui.OpenPopup('##storychange')
+        end
+        if imgui.BeginPopupModal('##storychange', true, imgui.WindowFlags.NoTitleBar + imgui.WindowFlags.NoResize) then
+            imgui.Text(new)
+            local wid = imgui.GetWindowWidth()
+            imgui.SetCursorPosX(wid / 2 - 50)
+            if imgui.Button(u8 'Закрыть', imgui.ImVec2(100, 30)) then
+                imgui.CloseCurrentPopup()
+            end
+            imgui.EndPopup()
         end
     end
     imgui.End()
@@ -1000,6 +994,70 @@ function blackOrangeTheme()
     colors[clr.PlotLinesHovered] = ImVec4(0.25, 1.00, 0.00, 1.00)
     colors[clr.PlotHistogram] = ImVec4(0.40, 0.39, 0.38, 0.63)
     colors[clr.PlotHistogramHovered] = ImVec4(0.25, 1.00, 0.00, 1.00)
+    colors[clr.TextSelectedBg] = ImVec4(0.25, 1.00, 0.00, 0.43)
+    colors[clr.ModalWindowDarkening] = ImVec4(1.00, 0.98, 0.95, 0.73)
+end
+
+-- https://www.blast.hk/threads/25442/post-473803
+function greyTheme()
+    imgui.SwitchContext()
+    local style = imgui.GetStyle()
+    local colors = style.Colors
+    local clr = imgui.Col
+    local ImVec4 = imgui.ImVec4
+    local ImVec2 = imgui.ImVec2
+
+    style.WindowPadding = ImVec2(15, 15)
+    style.WindowRounding = 15.0
+    style.FramePadding = ImVec2(5, 5)
+    style.ItemSpacing = ImVec2(12, 8)
+    style.ItemInnerSpacing = ImVec2(8, 6)
+    style.IndentSpacing = 25.0
+    style.ScrollbarSize = 15.0
+    style.ScrollbarRounding = 15.0
+    style.GrabMinSize = 15.0
+    style.GrabRounding = 7.0
+    style.ChildWindowRounding = 8.0
+    style.FrameRounding = 6.0
+
+    colors[clr.Text] = ImVec4(0.95, 0.96, 0.98, 1.00)
+    colors[clr.TextDisabled] = ImVec4(0.36, 0.42, 0.47, 1.00)
+    colors[clr.WindowBg] = ImVec4(0.11, 0.15, 0.17, 1.00)
+    colors[clr.ChildWindowBg] = ImVec4(0.15, 0.18, 0.22, 1.00)
+    colors[clr.PopupBg] = ImVec4(0.08, 0.08, 0.08, 0.94)
+    colors[clr.Border] = ImVec4(0.43, 0.43, 0.50, 0.50)
+    colors[clr.BorderShadow] = ImVec4(0.00, 0.00, 0.00, 0.00)
+    colors[clr.FrameBg] = ImVec4(0.20, 0.25, 0.29, 1.00)
+    colors[clr.FrameBgHovered] = ImVec4(0.12, 0.20, 0.28, 1.00)
+    colors[clr.FrameBgActive] = ImVec4(0.09, 0.12, 0.14, 1.00)
+    colors[clr.TitleBg] = ImVec4(0.09, 0.12, 0.14, 0.65)
+    colors[clr.TitleBgCollapsed] = ImVec4(0.00, 0.00, 0.00, 0.51)
+    colors[clr.TitleBgActive] = ImVec4(0.08, 0.10, 0.12, 1.00)
+    colors[clr.MenuBarBg] = ImVec4(0.15, 0.18, 0.22, 1.00)
+    colors[clr.ScrollbarBg] = ImVec4(0.02, 0.02, 0.02, 0.39)
+    colors[clr.ScrollbarGrab] = ImVec4(0.20, 0.25, 0.29, 1.00)
+    colors[clr.ScrollbarGrabHovered] = ImVec4(0.18, 0.22, 0.25, 1.00)
+    colors[clr.ScrollbarGrabActive] = ImVec4(0.09, 0.21, 0.31, 1.00)
+    colors[clr.ComboBg] = ImVec4(0.20, 0.25, 0.29, 1.00)
+    colors[clr.CheckMark] = ImVec4(0.28, 0.56, 1.00, 1.00)
+    colors[clr.SliderGrab] = ImVec4(0.28, 0.56, 1.00, 1.00)
+    colors[clr.SliderGrabActive] = ImVec4(0.37, 0.61, 1.00, 1.00)
+    colors[clr.Button] = ImVec4(0.20, 0.25, 0.29, 1.00)
+    colors[clr.ButtonHovered] = ImVec4(0.28, 0.56, 1.00, 1.00)
+    colors[clr.ButtonActive] = ImVec4(0.06, 0.53, 0.98, 1.00)
+    colors[clr.Header] = ImVec4(0.20, 0.25, 0.29, 0.55)
+    colors[clr.HeaderHovered] = ImVec4(0.26, 0.59, 0.98, 0.80)
+    colors[clr.HeaderActive] = ImVec4(0.26, 0.59, 0.98, 1.00)
+    colors[clr.ResizeGrip] = ImVec4(0.26, 0.59, 0.98, 0.25)
+    colors[clr.ResizeGripHovered] = ImVec4(0.26, 0.59, 0.98, 0.67)
+    colors[clr.ResizeGripActive] = ImVec4(0.06, 0.05, 0.07, 1.00)
+    colors[clr.CloseButton] = ImVec4(0.40, 0.39, 0.38, 0.16)
+    colors[clr.CloseButtonHovered] = ImVec4(0.40, 0.39, 0.38, 0.39)
+    colors[clr.CloseButtonActive] = ImVec4(0.40, 0.39, 0.38, 1.00)
+    colors[clr.PlotLines] = ImVec4(0.61, 0.61, 0.61, 1.00)
+    colors[clr.PlotLinesHovered] = ImVec4(1.00, 0.43, 0.35, 1.00)
+    colors[clr.PlotHistogram] = ImVec4(0.90, 0.70, 0.00, 1.00)
+    colors[clr.PlotHistogramHovered] = ImVec4(1.00, 0.60, 0.00, 1.00)
     colors[clr.TextSelectedBg] = ImVec4(0.25, 1.00, 0.00, 0.43)
     colors[clr.ModalWindowDarkening] = ImVec4(1.00, 0.98, 0.95, 0.73)
 end
