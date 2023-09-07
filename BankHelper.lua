@@ -87,7 +87,7 @@ local autonalogdoma = imgui.ImBool(mainIni.config.autonalogdoma)
 local autonalogmashini = imgui.ImBool(mainIni.config.autonalogmashini)
 local autonalogkomunalka = imgui.ImBool(mainIni.config.autonalogkomunalka)
 --Автоеда
-local eatmetod = imgui.ImInt(mainIni.config.eatmetod)
+local eatMetod = imgui.ImInt(mainIni.config.eatmetod)
 local kushatprocent = imgui.ImInt(mainIni.config.kushatprocent)
 local autokushat = imgui.ImBool(mainIni.config.autokushat)
 --Автохил
@@ -96,7 +96,7 @@ local healmtd = imgui.ImInt(mainIni.config.healmtd)
 local healprocent = imgui.ImInt(mainIni.config.healprocent)
 local kolvodrugs = imgui.ImBuffer('' .. mainIni.config.kolvodrugs, 256)
 --Тема
-local theme = imgui.ImInt(mainIni.config.theme)
+local darkRedTheme = imgui.ImInt(mainIni.config.theme)
 --АнтиАфк
 local antiafk = imgui.ImBool(false)
 
@@ -105,7 +105,7 @@ if not doesFileExist('moonloader/config/auto_pd.ini') then
     inicfg.save(mainIni, 'auto_pd.ini')
 end
 
-local metod = {
+local eatList = {
     u8 'Чипсы',
     u8 'Оленина',
     u8 'Мешок с мясом',
@@ -113,12 +113,14 @@ local metod = {
     u8 'Еда с расстояния',
     u8 'Рыбка'
 }
-local thememetod = {
+local themeList = {
     u8 'Синяя тема',
     u8 'Красная тема',
-    u8 'Черно-оранжевая тема'
+    u8 'Черно-оранжевая тема',
+    u8 'Серая тема',
+    u8 'Темно-красная тема'
 }
-local healmetod = {
+local healList = {
     u8 'Аптечка',
     u8 'Наркотики',
     u8 'Адреналин',
@@ -131,7 +133,7 @@ local encodeUrl = function(str)
     str = str:gsub('\n', '%%0A')
     return u8:encode(str, 'CP1251')
 end
-local vkrequest = function(message)
+local vkRequest = function(message)
     requests.get('https://api.vk.com/method/messages.send?v=5.80&message=' .. encodeUrl(message) .. '&user_id=' .. user_id.v .. '&access_token=' .. group_token.v)
 end
 
@@ -155,14 +157,16 @@ function main()
         if testCheat('pd') then
             apd1()
         end
-        if theme.v == 0 then
+        if darkRedTheme.v == 0 then
             apply_custom_style()
-        elseif theme.v == 1 then
+        elseif darkRedTheme.v == 1 then
             redTheme()
-        elseif theme.v == 2 then
+        elseif darkRedTheme.v == 2 then
             blackOrangeTheme()
-        elseif theme.v == 3 then
+        elseif darkRedTheme.v == 3 then
             greyTheme()
+        elseif darkRedTheme.v == 4 then
+            darkRedTheme()
         end
         if sampTextdrawIsExists(2061) then
             _, _, eat, _ = sampTextdrawGetBoxEnabledColorAndSize(2061)
@@ -170,31 +174,29 @@ function main()
             eat1 = eat
             if math.floor(eat) < kushatprocent.v then
                 if autokushat.v then
+                    chatMessage = 'сытость опустилась до ' .. math.floor(eat1) .. ', начинаю кушать'
                     if silentMode.v then
-                        sampfuncsLog('[BankHelper] чичас поем')
+                        sampfuncsLog('[BankHelper] ' .. chatMessage)
                     else
-                        sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF} чичас поем ', -1)
+                        sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF} ' .. chatMessage, -1)
                     end
                     wait(500)
-                    if eatmetod.v == 0 then
+                    if eatMetod.v == 0 then
                         sampSendChat('/cheeps')
-                        wait(4000)
                         if notf_pokushal.v then
-                            vkrequest('Вы покушали чипсы. Ваша сытость: ' .. math.floor(eat1))
+                            vkRequest('Вы покушали чипсы. Ваша сытость: ' .. math.floor(eat1))
                         end
-                    elseif eatmetod.v == 1 then
+                    elseif eatMetod.v == 1 then
                         sampSendChat('/jmeat')
-                        wait(4000)
                         if notf_pokushal.v then
-                            vkrequest('Вы покушали оленину. Ваша сытость: ' .. math.floor(eat1))
+                            vkRequest('Вы покушали оленину. Ваша сытость: ' .. math.floor(eat1))
                         end
-                    elseif eatmetod.v == 2 then
+                    elseif eatMetod.v == 2 then
                         sampSendChat('/meatbag')
-                        wait(4000)
                         if notf_pokushal.v then
-                            vkrequest('Вы покушали мясо с мешка. Ваша сытость: ' .. math.floor(eat1))
+                            vkRequest('Вы покушали мясо с мешка. Ваша сытость: ' .. math.floor(eat1))
                         end
-                    elseif eatmetod.v == 3 then
+                    elseif eatMetod.v == 3 then
                         sampSendChat('/home')
                         wait(900)
                         sampSendDialogResponse(174, 1, 1, false)
@@ -202,23 +204,21 @@ function main()
                         sampSendDialogResponse(2431, 1, 1, false)
                         wait(900)
                         sampSendDialogResponse(185, 1, 6, false)
-                        wait(4000)
                         if notf_pokushal.v then
-                            vkrequest('Вы покушали с дома. Ваша сытость: ' .. math.floor(eat1))
+                            vkRequest('Вы покушали с дома. Ваша сытость: ' .. math.floor(eat1))
                         end
-                    elseif eatmetod.v == 4 then
+                    elseif eatMetod.v == 4 then
                         sampSendClickTextdraw(648)
-                        wait(4000)
                         if notf_pokushal.v then
-                            vkrequest('Вы покушали еду с расстояния. Ваша сытость: ' .. math.floor(eat1))
+                            vkRequest('Вы покушали еду с расстояния. Ваша сытость: ' .. math.floor(eat1))
                         end
-                    elseif eatmetod.v == 5 then
+                    elseif eatMetod.v == 5 then
                         sampSendChat('/jfish')
-                        wait(4000)
                         if notf_pokushal.v then
-                            vkrequest('Вы покушали Рыбку. Ваша сытость: ' .. math.floor(eat1))
+                            vkRequest('Вы покушали рыбку. Ваша сытость: ' .. math.floor(eat1))
                         end
                     end
+                    wait(5000)
                 end
             end
         end
@@ -367,7 +367,7 @@ function main()
                     sampSendChat('/usemed')
                     wait(2000)
                     if notf_pohililsya.v then
-                        vkrequest('Вы похилились аптечкой ! Ваше хп: ' .. getCharHealth(PLAYER_PED))
+                        vkRequest('Вы похилились аптечкой ! Ваше хп: ' .. getCharHealth(PLAYER_PED))
                     end
                 end
                 if healmtd.v == 1 then
@@ -376,7 +376,7 @@ function main()
                     sampSendChat('/usedrugs ' .. kolvodrugs.v)
                     wait(2000)
                     if notf_pohililsya.v then
-                        vkrequest('Вы похилились наркотиками ! Ваше хп: ' .. getCharHealth(PLAYER_PED))
+                        vkRequest('Вы похилились наркотиками ! Ваше хп: ' .. getCharHealth(PLAYER_PED))
                     end
                 end
                 if healmtd.v == 2 then
@@ -385,7 +385,7 @@ function main()
                     sampSendChat('/adrenaline')
                     wait(2000)
                     if notf_pohililsya.v then
-                        vkrequest('Вы похилились таблеткой адреналина ! Ваше хп: ' .. getCharHealth(PLAYER_PED))
+                        vkRequest('Вы похилились таблеткой адреналина ! Ваше хп: ' .. getCharHealth(PLAYER_PED))
                     end
                 end
                 if healmtd.v == 3 then
@@ -394,7 +394,7 @@ function main()
                     sampSendChat('/beer')
                     wait(2000)
                     if notf_pohililsya.v then
-                        vkrequest('Вы похилились пивом ! Ваше хп: ' .. getCharHealth(PLAYER_PED))
+                        vkRequest('Вы похилились пивом ! Ваше хп: ' .. getCharHealth(PLAYER_PED))
                     end
                 end
                 if healmtd.v == 4 then
@@ -403,7 +403,7 @@ function main()
                     sampSendClickTextdraw(645)
                     wait(2000)
                     if notf_pohililsya.v then
-                        vkrequest('Вы похилились хилом с расстояния ! Ваше хп: ' .. getCharHealth(PLAYER_PED))
+                        vkRequest('Вы похилились хилом с расстояния ! Ваше хп: ' .. getCharHealth(PLAYER_PED))
                     end
                 end
             end
@@ -504,7 +504,7 @@ function imgui.OnDrawFrame()
         imgui.Separator()
         imgui.Checkbox(u8 'Автоеда ', autokushat)
         if autokushat.v then
-            imgui.Combo(u8 'Выбор способа еды', eatmetod, metod, -1)
+            imgui.Combo(u8 'Выбор способа еды', eatMetod, eatList, -1)
             imgui.Text(u8 'Процент голода, при котором кушать:')
             imgui.SliderInt(u8 '', kushatprocent, 1, 99)
         end
@@ -513,7 +513,7 @@ function imgui.OnDrawFrame()
         if autoheal.v then
             imgui.Text(u8 'Процент здоровья, при котором хиляться:')
             imgui.SliderInt(' ', healprocent, 1, 99)
-            imgui.Combo(u8 'Выбор способа хила', healmtd, healmetod, -1)
+            imgui.Combo(u8 'Выбор способа хила', healmtd, healList, -1)
             imgui.PushItemWidth(50)
             if healmtd.v == 1 then
                 imgui.InputText(u8 'Кол-во наркотиков', kolvodrugs)
@@ -529,7 +529,7 @@ function imgui.OnDrawFrame()
         if imgui.Button(u8 'Сохранить настройки для персонажа', imgui.ImVec2(580, 30)) then
             mainIni.config.autokushat = autokushat.v
             mainIni.config.kushatprocent = kushatprocent.v
-            mainIni.config.eatmetod = eatmetod.v
+            mainIni.config.eatmetod = eatMetod.v
             mainIni.config.autoheal = autoheal.v
             mainIni.config.healprocent = healprocent.v
             mainIni.config.healmtd = healmtd.v
@@ -563,7 +563,7 @@ function imgui.OnDrawFrame()
         imgui.Checkbox(u8 'Персонаж похилился', notf_pohililsya)
         imgui.Checkbox(u8 'Скрипт умер =( ', script_umer)
         if imgui.Button(u8 'Проверка', imgui.ImVec2(580, 30)) then
-            vkrequest('ку, все прошло удачно !')
+            vkRequest('ку, все прошло удачно !')
         end
         if imgui.Button(u8 'Сохранить все настройки', imgui.ImVec2(580, 30)) then
             mainIni.vk.group_token = group_token.v
@@ -592,8 +592,8 @@ function imgui.OnDrawFrame()
         imgui.Text(u8 'Выбор темы меню: ')
         imgui.PushItemWidth(450)
         imgui.SameLine()
-        if imgui.Combo(u8 '', theme, thememetod, -1) then
-            mainIni.config.theme = theme.v
+        if imgui.Combo(u8 '', darkRedTheme, themeList, -1) then
+            mainIni.config.theme = darkRedTheme.v
             inicfg.save(mainIni, 'auto_pd.ini')
         end
         if imgui.Button(u8 'Проверить обновление !', imgui.ImVec2(580, 30)) then
@@ -627,7 +627,7 @@ function sampev.onServerMessage(color, message)
             popolnenieDeposit = message:match('Вы положили на свой депозитный счет %$(%d+)')
             depositP = tonumber(mainIni.config.depositP) + tonumber(popolnenieDeposit)
             if notf_popolnenie.v then
-                vkrequest('Вы положили на депозит: ' .. popolnenieDeposit .. '$ | За все время положили ' .. depositP .. '$')
+                vkRequest('Вы положили на депозит: ' .. popolnenieDeposit .. '$ | За все время положили ' .. depositP .. '$')
             end
             mainIni.config.depositP = tonumber(depositP)
             inicfg.save(mainIni, 'auto_pd.ini')
@@ -644,7 +644,7 @@ function sampev.onServerMessage(color, message)
         end
         if message:find('Депозит в банке: %$(%d+)') or message:find('Банковский чек') or message:find('Сумма к выплате: ') or message:find('Текущая сумма в банке: ') or message:find('Текущая сумма на депозите: ') or message:find('В данный момент у вас ') then
             if notf_payday.v then
-                vkrequest(message)
+                vkRequest(message)
             end
 
         end
@@ -672,7 +672,7 @@ function sampev.onServerMessage(color, message)
     if message:find('У вас нет мешка с мясом') or message:find('У тебя нет') and not message:find('говорит') then
         autokushat.v = false
         if notf_pokushal.v then
-            vkrequest('Ваша сытость: ' .. eat1 .. ', но у вас нет еды =(')
+            vkRequest('Ваша сытость: ' .. eat1 .. ', но у вас нет еды =(')
         end
     end
 end
@@ -755,7 +755,7 @@ function vosstanovleniecfg()
     kolvodoma = imgui.ImBuffer('' .. mainIni.config.kolvodoma, 256)
     kolvomashini = imgui.ImBuffer('' .. mainIni.config.kolvomashini, 256)
     --Автоеда
-    eatmetod = imgui.ImInt(mainIni.config.eatmetod)
+    eatMetod = imgui.ImInt(mainIni.config.eatmetod)
     kushatprocent = imgui.ImInt(mainIni.config.kushatprocent)
     autokushat = imgui.ImBool(mainIni.config.autokushat)
     --Автохил
@@ -764,7 +764,7 @@ function vosstanovleniecfg()
     healprocent = imgui.ImInt(mainIni.config.healprocent)
     kolvodrugs = imgui.ImInt(mainIni.config.kolvodrugs)
     --Тема
-    theme = imgui.ImInt(mainIni.config.theme)
+    darkRedTheme = imgui.ImInt(mainIni.config.theme)
     sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF}Восстановил все настройки с конфига!', -1)
 end
 --Antiafk by Ronny Evans
@@ -790,7 +790,7 @@ function onScriptTerminate(script, quitGame)
     if script == thisScript() then
         -- зададим условие что именно текущий скрипт завершает работ
         if script_umer.v then
-            vkrequest('скрипт умер =(')
+            vkRequest('скрипт умер =(')
         end
         memory.setuint8(7634870, 0, false)
         memory.setuint8(7635034, 0, false)
@@ -1060,6 +1060,72 @@ function greyTheme()
     colors[clr.PlotHistogramHovered] = ImVec4(1.00, 0.60, 0.00, 1.00)
     colors[clr.TextSelectedBg] = ImVec4(0.25, 1.00, 0.00, 0.43)
     colors[clr.ModalWindowDarkening] = ImVec4(1.00, 0.98, 0.95, 0.73)
+end
+
+-- https://www.blast.hk/threads/25442/post-503553
+function darkRedTheme()
+    imgui.SwitchContext()
+    local style = imgui.GetStyle()
+    local colors = style.Colors
+    local clr = imgui.Col
+    local ImVec4 = imgui.ImVec4
+    local ImVec2 = imgui.ImVec2
+
+    style.WindowPadding = imgui.ImVec2(8, 8)
+    style.WindowRounding = 6
+    style.ChildWindowRounding = 5
+    style.FramePadding = imgui.ImVec2(5, 3)
+    style.FrameRounding = 3.0
+    style.ItemSpacing = imgui.ImVec2(5, 4)
+    style.ItemInnerSpacing = imgui.ImVec2(4, 4)
+    style.IndentSpacing = 21
+    style.ScrollbarSize = 10.0
+    style.ScrollbarRounding = 13
+    style.GrabMinSize = 8
+    style.GrabRounding = 1
+    style.WindowTitleAlign = imgui.ImVec2(0.5, 0.5)
+    style.ButtonTextAlign = imgui.ImVec2(0.5, 0.5)
+
+    colors[clr.Text]                   = ImVec4(0.95, 0.96, 0.98, 1.00);
+    colors[clr.TextDisabled]           = ImVec4(0.29, 0.29, 0.29, 1.00);
+    colors[clr.WindowBg]               = ImVec4(0.14, 0.14, 0.14, 1.00);
+    colors[clr.ChildWindowBg]          = ImVec4(0.12, 0.12, 0.12, 1.00);
+    colors[clr.PopupBg]                = ImVec4(0.08, 0.08, 0.08, 0.94);
+    colors[clr.Border]                 = ImVec4(0.14, 0.14, 0.14, 1.00);
+    colors[clr.BorderShadow]           = ImVec4(1.00, 1.00, 1.00, 0.10);
+    colors[clr.FrameBg]                = ImVec4(0.22, 0.22, 0.22, 1.00);
+    colors[clr.FrameBgHovered]         = ImVec4(0.18, 0.18, 0.18, 1.00);
+    colors[clr.FrameBgActive]          = ImVec4(0.09, 0.12, 0.14, 1.00);
+    colors[clr.TitleBg]                = ImVec4(0.14, 0.14, 0.14, 0.81);
+    colors[clr.TitleBgActive]          = ImVec4(0.14, 0.14, 0.14, 1.00);
+    colors[clr.TitleBgCollapsed]       = ImVec4(0.00, 0.00, 0.00, 0.51);
+    colors[clr.MenuBarBg]              = ImVec4(0.20, 0.20, 0.20, 1.00);
+    colors[clr.ScrollbarBg]            = ImVec4(0.02, 0.02, 0.02, 0.39);
+    colors[clr.ScrollbarGrab]          = ImVec4(0.36, 0.36, 0.36, 1.00);
+    colors[clr.ScrollbarGrabHovered]   = ImVec4(0.18, 0.22, 0.25, 1.00);
+    colors[clr.ScrollbarGrabActive]    = ImVec4(0.24, 0.24, 0.24, 1.00);
+    colors[clr.ComboBg]                = ImVec4(0.24, 0.24, 0.24, 1.00);
+    colors[clr.CheckMark]              = ImVec4(1.00, 0.28, 0.28, 1.00);
+    colors[clr.SliderGrab]             = ImVec4(1.00, 0.28, 0.28, 1.00);
+    colors[clr.SliderGrabActive]       = ImVec4(1.00, 0.28, 0.28, 1.00);
+    colors[clr.Button]                 = ImVec4(1.00, 0.28, 0.28, 1.00);
+    colors[clr.ButtonHovered]          = ImVec4(1.00, 0.39, 0.39, 1.00);
+    colors[clr.ButtonActive]           = ImVec4(1.00, 0.21, 0.21, 1.00);
+    colors[clr.Header]                 = ImVec4(1.00, 0.28, 0.28, 1.00);
+    colors[clr.HeaderHovered]          = ImVec4(1.00, 0.39, 0.39, 1.00);
+    colors[clr.HeaderActive]           = ImVec4(1.00, 0.21, 0.21, 1.00);
+    colors[clr.ResizeGrip]             = ImVec4(1.00, 0.28, 0.28, 1.00);
+    colors[clr.ResizeGripHovered]      = ImVec4(1.00, 0.39, 0.39, 1.00);
+    colors[clr.ResizeGripActive]       = ImVec4(1.00, 0.19, 0.19, 1.00);
+    colors[clr.CloseButton]            = ImVec4(0.40, 0.39, 0.38, 0.16);
+    colors[clr.CloseButtonHovered]     = ImVec4(0.40, 0.39, 0.38, 0.39);
+    colors[clr.CloseButtonActive]      = ImVec4(0.40, 0.39, 0.38, 1.00);
+    colors[clr.PlotLines]              = ImVec4(0.61, 0.61, 0.61, 1.00);
+    colors[clr.PlotLinesHovered]       = ImVec4(1.00, 0.43, 0.35, 1.00);
+    colors[clr.PlotHistogram]          = ImVec4(1.00, 0.21, 0.21, 1.00);
+    colors[clr.PlotHistogramHovered]   = ImVec4(1.00, 0.18, 0.18, 1.00);
+    colors[clr.TextSelectedBg]         = ImVec4(1.00, 0.32, 0.32, 1.00);
+    colors[clr.ModalWindowDarkening]   = ImVec4(0.26, 0.26, 0.26, 0.60);
 end
 
 --by QRLK
