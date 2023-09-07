@@ -96,7 +96,7 @@ local healmtd = imgui.ImInt(mainIni.config.healmtd)
 local healprocent = imgui.ImInt(mainIni.config.healprocent)
 local kolvodrugs = imgui.ImBuffer('' .. mainIni.config.kolvodrugs, 256)
 --Тема
-local darkRedTheme = imgui.ImInt(mainIni.config.theme)
+local theme = imgui.ImInt(mainIni.config.theme)
 --АнтиАфк
 local antiafk = imgui.ImBool(false)
 
@@ -157,15 +157,15 @@ function main()
         if testCheat('pd') then
             apd1()
         end
-        if darkRedTheme.v == 0 then
+        if theme.v == 0 then
             apply_custom_style()
-        elseif darkRedTheme.v == 1 then
+        elseif theme.v == 1 then
             redTheme()
-        elseif darkRedTheme.v == 2 then
+        elseif theme.v == 2 then
             blackOrangeTheme()
-        elseif darkRedTheme.v == 3 then
+        elseif theme.v == 3 then
             greyTheme()
-        elseif darkRedTheme.v == 4 then
+        elseif theme.v == 4 then
             darkRedTheme()
         end
         if sampTextdrawIsExists(2061) then
@@ -592,8 +592,8 @@ function imgui.OnDrawFrame()
         imgui.Text(u8 'Выбор темы меню: ')
         imgui.PushItemWidth(450)
         imgui.SameLine()
-        if imgui.Combo(u8 '', darkRedTheme, themeList, -1) then
-            mainIni.config.theme = darkRedTheme.v
+        if imgui.Combo(u8 '', theme, themeList, -1) then
+            mainIni.config.theme = theme.v
             inicfg.save(mainIni, 'auto_pd.ini')
         end
         if imgui.Button(u8 'Проверить обновление !', imgui.ImVec2(580, 30)) then
@@ -764,7 +764,7 @@ function vosstanovleniecfg()
     healprocent = imgui.ImInt(mainIni.config.healprocent)
     kolvodrugs = imgui.ImInt(mainIni.config.kolvodrugs)
     --Тема
-    darkRedTheme = imgui.ImInt(mainIni.config.theme)
+    theme = imgui.ImInt(mainIni.config.theme)
     sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF}Восстановил все настройки с конфига!', -1)
 end
 --Antiafk by Ronny Evans
