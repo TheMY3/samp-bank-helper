@@ -1,6 +1,6 @@
 script_name("BankHelper")
-script_version_number(229)
-script_version("6")
+script_version_number(230)
+script_version("7.0")
 script_authors("Andrew_Medverson")
 local requests = require 'requests'
 local sampev = require "lib.samp.events"
