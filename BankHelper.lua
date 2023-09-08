@@ -232,9 +232,9 @@ function main()
 
         if testCheat(bankCheatCode) and not sampIsChatInputActive() and not sampIsDialogActive() then
             sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF} ѕытаюсь провести банковские операции', -1)
-            setVirtualKeyDown(VK_N, false)
-            wait(500)
             setVirtualKeyDown(VK_N, true)
+            wait(500)
+            setVirtualKeyDown(VK_N, false)
             wait(1000)
             sampCloseCurrentDialogWithButton(0)
             wait(1000)
