@@ -4,7 +4,6 @@ script_version("6")
 script_authors("Andrew_Medverson")
 local requests = require 'requests'
 local sampev = require "lib.samp.events"
-local keys = require "vkeys"
 require "lib.moonloader"
 local imgui = require "imgui"
 local memory = require 'memory'
@@ -22,6 +21,11 @@ local deposit = -1
 local pokaz = false
 local netnalogabiz = true
 local netnalogamashini = true
+
+-- Cheat codes
+local menuCheatCode = 'pd'
+local menuChatCommand = 'apd'
+local bankCheatCode = 'oo'
 
 local menu = 2
 local global_scale = imgui.ImFloat(1.2)
@@ -75,30 +79,30 @@ local notf_pohililsya = imgui.ImBool(mainIni.vk.notf_pohililsya)
 local script_umer = imgui.ImBool(mainIni.vk.script_umer)
 
 --Автопополнение депозита
-local popolnenie = imgui.ImBool(mainIni.config.popolnenie)
-local sli = imgui.ImInt(mainIni.config.sli)
+local isDepositRefillEnabled = imgui.ImBool(mainIni.config.popolnenie)
+local depositRefillAmount = imgui.ImInt(mainIni.config.sli)
 
 --Автоввод пароля
-local autopass = imgui.ImBool(mainIni.config.autopassw)
-local pass = imgui.ImBuffer('' .. mainIni.config.password, 256)
+local isAutoPassword = imgui.ImBool(mainIni.config.autopassw)
+local bankCardPassword = imgui.ImBuffer('' .. mainIni.config.password, 256)
 --Автоналоги
-local autonalogbiznes = imgui.ImBool(mainIni.config.autonalogbiznes)
-local autonalogdoma = imgui.ImBool(mainIni.config.autonalogdoma)
-local autonalogmashini = imgui.ImBool(mainIni.config.autonalogmashini)
-local autonalogkomunalka = imgui.ImBool(mainIni.config.autonalogkomunalka)
+local isPayBusinessTax = imgui.ImBool(mainIni.config.autonalogbiznes)
+local isPayHouseTax = imgui.ImBool(mainIni.config.autonalogdoma)
+local isPayCarTax = imgui.ImBool(mainIni.config.autonalogmashini)
+local isPayCommunalPayment = imgui.ImBool(mainIni.config.autonalogkomunalka)
 --Автоеда
-local eatMetod = imgui.ImInt(mainIni.config.eatmetod)
-local kushatprocent = imgui.ImInt(mainIni.config.kushatprocent)
-local autokushat = imgui.ImBool(mainIni.config.autokushat)
+local eatMethod = imgui.ImInt(mainIni.config.eatmetod)
+local eatPercentMinLimit = imgui.ImInt(mainIni.config.kushatprocent)
+local isAutoEatEnabled = imgui.ImBool(mainIni.config.autokushat)
 --Автохил
-local autoheal = imgui.ImBool(mainIni.config.autoheal)
-local healmtd = imgui.ImInt(mainIni.config.healmtd)
-local healprocent = imgui.ImInt(mainIni.config.healprocent)
-local kolvodrugs = imgui.ImBuffer('' .. mainIni.config.kolvodrugs, 256)
+local isAutoHealEnabled = imgui.ImBool(mainIni.config.autoheal)
+local healMethod = imgui.ImInt(mainIni.config.healmtd)
+local healPercentMinLimit = imgui.ImInt(mainIni.config.healprocent)
+local drugsAmount = imgui.ImBuffer('' .. mainIni.config.kolvodrugs, 256)
 --Тема
 local theme = imgui.ImInt(mainIni.config.theme)
 --АнтиАфк
-local antiafk = imgui.ImBool(false)
+local antiAfk = imgui.ImBool(false)
 
 local status1 = inicfg.load(mainIni, 'auto_pd.ini')
 if not doesFileExist('moonloader/config/auto_pd.ini') then
@@ -145,20 +149,20 @@ function main()
         wait(100)
     end
     autoupdate("https://gist.githubusercontent.com/Andrey281/0b7e3f7707b2479db3f920d382a0385a/raw/", '[' .. string.upper(thisScript().name) .. ']: ', "http://vk.com/andreyneya")
-    sampAddChatMessage('{00FF00}[BankHelper v' .. thisScript().version .. ']: {FFFFFF}Активация меню /apd или чит-код pd', -1)
+    sampAddChatMessage('{00FF00}[BankHelper v' .. thisScript().version .. ']: {FFFFFF}Активация меню / ' .. menuChatCommand .. ' или чит-код ' .. menuCheatCode, -1)
     sampAddChatMessage('{00FF00}[BankHelper v' .. thisScript().version .. ']: {FFFFFF}Author - {FF0000}Andrew_Medverson', -1)
-    sampRegisterChatCommand('apd', apd1)
+    sampRegisterChatCommand(menuChatCommand, apd1)
     while true do
         wait(0)
 
         if mw.v == false then
             imgui.Process = false
         end
-        if testCheat('pd') then
+        if testCheat(menuCheatCode) then
             apd1()
         end
         if theme.v == 0 then
-            apply_custom_style()
+            blueTheme()
         elseif theme.v == 1 then
             redTheme()
         elseif theme.v == 2 then
@@ -168,12 +172,13 @@ function main()
         elseif theme.v == 4 then
             darkRedTheme()
         end
+
         if sampTextdrawIsExists(2061) then
             _, _, eat, _ = sampTextdrawGetBoxEnabledColorAndSize(2061)
             eat = (eat - imgui.ImVec2(sampTextdrawGetPos(2061)).x) * 1.83
             eat1 = eat
-            if math.floor(eat) < kushatprocent.v then
-                if autokushat.v then
+            if math.floor(eat) < eatPercentMinLimit.v then
+                if isAutoEatEnabled.v then
                     chatMessage = 'сытость опустилась до ' .. math.floor(eat1) .. ', начинаю кушать'
                     if silentMode.v then
                         sampfuncsLog('[BankHelper] ' .. chatMessage)
@@ -181,22 +186,22 @@ function main()
                         sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF} ' .. chatMessage, -1)
                     end
                     wait(500)
-                    if eatMetod.v == 0 then
+                    if eatMethod.v == 0 then
                         sampSendChat('/cheeps')
                         if notf_pokushal.v then
                             vkRequest('Вы покушали чипсы. Ваша сытость: ' .. math.floor(eat1))
                         end
-                    elseif eatMetod.v == 1 then
+                    elseif eatMethod.v == 1 then
                         sampSendChat('/jmeat')
                         if notf_pokushal.v then
                             vkRequest('Вы покушали оленину. Ваша сытость: ' .. math.floor(eat1))
                         end
-                    elseif eatMetod.v == 2 then
+                    elseif eatMethod.v == 2 then
                         sampSendChat('/meatbag')
                         if notf_pokushal.v then
                             vkRequest('Вы покушали мясо с мешка. Ваша сытость: ' .. math.floor(eat1))
                         end
-                    elseif eatMetod.v == 3 then
+                    elseif eatMethod.v == 3 then
                         sampSendChat('/home')
                         wait(900)
                         sampSendDialogResponse(174, 1, 1, false)
@@ -207,12 +212,12 @@ function main()
                         if notf_pokushal.v then
                             vkRequest('Вы покушали с дома. Ваша сытость: ' .. math.floor(eat1))
                         end
-                    elseif eatMetod.v == 4 then
+                    elseif eatMethod.v == 4 then
                         sampSendClickTextdraw(648)
                         if notf_pokushal.v then
                             vkRequest('Вы покушали еду с расстояния. Ваша сытость: ' .. math.floor(eat1))
                         end
-                    elseif eatMetod.v == 5 then
+                    elseif eatMethod.v == 5 then
                         sampSendChat('/jfish')
                         if notf_pokushal.v then
                             vkRequest('Вы покушали рыбку. Ваша сытость: ' .. math.floor(eat1))
@@ -223,14 +228,15 @@ function main()
             end
         end
 
-        if testCheat('uu') and not sampIsChatInputActive() and not sampIsDialogActive() then
+        if testCheat(bankCheatCode) and not sampIsChatInputActive() and not sampIsDialogActive() then
+            sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF} Пытаюсь провести банковские операции', -1)
             setVirtualKeyDown(VK_N, false)
             wait(500)
             setVirtualKeyDown(VK_N, true)
             wait(1000)
             sampCloseCurrentDialogWithButton(0)
             wait(1000)
-            if autonalogbiznes.v then
+            if isPayBusinessTax.v then
                 if biznes ~= -1 then
                     setVirtualKeyDown(VK_N, true)
                     wait(500)
@@ -269,7 +275,7 @@ function main()
 
             end
             wait(300)
-            if autonalogdoma.v then
+            if isPayHouseTax.v then
                 if home ~= -1 then
                     setVirtualKeyDown(VK_N, true)
                     wait(300)
@@ -302,7 +308,7 @@ function main()
                 end
                 wait(300)
             end
-            if autonalogmashini.v then
+            if isPayCarTax.v then
                 if car ~= -1 then
                     setVirtualKeyDown(VK_N, true)
                     wait(300)
@@ -339,7 +345,7 @@ function main()
 
             end
             netnalogamashini = true
-            if autonalogkomunalka.v then
+            if isPayCommunalPayment.v then
                 if komm ~= -1 then
                     for g = 0, tonumber(domov - 1) do
                         setVirtualKeyDown(VK_N, true)
@@ -359,9 +365,9 @@ function main()
             end
         end
 
-        if autoheal.v then
-            if getCharHealth(PLAYER_PED) ~= 0 and getCharHealth(PLAYER_PED) < healprocent.v then
-                if healmtd.v == 0 then
+        if isAutoHealEnabled.v then
+            if getCharHealth(PLAYER_PED) ~= 0 and getCharHealth(PLAYER_PED) < healPercentMinLimit.v then
+                if healMethod.v == 0 then
                     sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF}чичас отхиляюсь', -1)
                     wait(300)
                     sampSendChat('/usemed')
@@ -370,16 +376,16 @@ function main()
                         vkRequest('Вы похилились аптечкой ! Ваше хп: ' .. getCharHealth(PLAYER_PED))
                     end
                 end
-                if healmtd.v == 1 then
+                if healMethod.v == 1 then
                     sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF}чичас отхиляюсь', -1)
                     wait(300)
-                    sampSendChat('/usedrugs ' .. kolvodrugs.v)
+                    sampSendChat('/usedrugs ' .. drugsAmount.v)
                     wait(2000)
                     if notf_pohililsya.v then
                         vkRequest('Вы похилились наркотиками ! Ваше хп: ' .. getCharHealth(PLAYER_PED))
                     end
                 end
-                if healmtd.v == 2 then
+                if healMethod.v == 2 then
                     sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF}чичас отхиляюсь', -1)
                     wait(300)
                     sampSendChat('/adrenaline')
@@ -388,7 +394,7 @@ function main()
                         vkRequest('Вы похилились таблеткой адреналина ! Ваше хп: ' .. getCharHealth(PLAYER_PED))
                     end
                 end
-                if healmtd.v == 3 then
+                if healMethod.v == 3 then
                     sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF}чичас отхиляюсь', -1)
                     wait(300)
                     sampSendChat('/beer')
@@ -397,7 +403,7 @@ function main()
                         vkRequest('Вы похилились пивом ! Ваше хп: ' .. getCharHealth(PLAYER_PED))
                     end
                 end
-                if healmtd.v == 4 then
+                if healMethod.v == 4 then
                     sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF}чичас отхиляюсь', -1)
                     wait(300)
                     sampSendClickTextdraw(645)
@@ -435,14 +441,14 @@ function imgui.OnDrawFrame()
     imgui.EndMenuBar()
 
     if menu == 1 then
-        imgui.Checkbox(u8 'Автоввод пароля', autopass)
-        if autopass.v then
+        imgui.Checkbox(u8 'Автоввод пароля', isAutoPassword)
+        if isAutoPassword.v then
             if pokaz then
                 imgui.PushItemWidth(250)
-                imgui.InputText(u8 'Введите пароль от карты', pass)
+                imgui.InputText(u8 'Введите пароль от карты', bankCardPassword)
             else
                 imgui.PushItemWidth(250)
-                imgui.InputText(u8 'Введите пароль от карты', pass, imgui.InputTextFlags.Password)
+                imgui.InputText(u8 'Введите пароль от карты', bankCardPassword, imgui.InputTextFlags.Password)
             end
             imgui.SameLine()
             if imgui.Button(pokaz and u8 'Скрыть пароль' or u8 'Показать пароль') then
@@ -451,30 +457,29 @@ function imgui.OnDrawFrame()
         end
 
         imgui.Separator()
-        imgui.Checkbox(u8 'Автопополнение депозита в пейдей', popolnenie)
-        if popolnenie.v then
+        imgui.Checkbox(u8 'Автопополнение депозита в пейдей', isDepositRefillEnabled)
+        if isDepositRefillEnabled.v then
             imgui.PushItemWidth(200)
-            imgui.InputInt(u8 'Сумма пополнения', sli)
-            if sli.v > 10000000 then
-                sli.v = 10000000
+            imgui.InputInt(u8 'Сумма пополнения', depositRefillAmount)
+            if depositRefillAmount.v > 10000000 then
+                depositRefillAmount.v = 10000000
             end
             imgui.PushItemWidth(120)
             imgui.Text(u8 'Необходимо стоять рядом с банковской кассой')
         end
         imgui.Separator()
 
-        imgui.Text(u8 'Для активации нажмите uu')
-        --sampAddChatMessage('u',-1)
+        imgui.Text(u8 'Для активации нажмите ' .. bankCheatCode)
 
-        imgui.Checkbox(u8 'АвтоОплата Бизов', autonalogbiznes)
-        imgui.Checkbox(u8 'АвтоОплата Домов', autonalogdoma)
-        if autonalogdoma.v then
-            imgui.Checkbox(u8 'АвтоОплата Комуналки', autonalogkomunalka)
+        imgui.Checkbox(u8 'АвтоОплата Бизов', isPayBusinessTax)
+        imgui.Checkbox(u8 'АвтоОплата Домов', isPayHouseTax)
+        if isPayHouseTax.v then
+            imgui.Checkbox(u8 'АвтоОплата Коммуналки', isPayCommunalPayment)
         end
-        if autonalogdoma.v == false then
-            autonalogkomunalka.v = false
+        if isPayHouseTax.v == false then
+            isPayCommunalPayment.v = false
         end
-        imgui.Checkbox(u8 'АвтоОплата Машин', autonalogmashini)
+        imgui.Checkbox(u8 'АвтоОплата Машин', isPayCarTax)
         imgui.Separator()
         if imgui.Button(u8 'Всего пополнилось: $' .. mainIni.config.depositP, imgui.ImVec2(285, 20)) then
             sampAddChatMessage('Всего пополнилось: {B83434}$' .. mainIni.config.depositP, -1)
@@ -502,38 +507,38 @@ function imgui.OnDrawFrame()
     elseif menu == 2 then
         imgui.Checkbox(u8 'Не отправлять сообщения в чат', silentMode)
         imgui.Separator()
-        imgui.Checkbox(u8 'Автоеда ', autokushat)
-        if autokushat.v then
-            imgui.Combo(u8 'Выбор способа еды', eatMetod, eatList, -1)
+        imgui.Checkbox(u8 'Автоеда ', isAutoEatEnabled)
+        if isAutoEatEnabled.v then
+            imgui.Combo(u8 'Выбор способа еды', eatMethod, eatList, -1)
             imgui.Text(u8 'Процент голода, при котором кушать:')
-            imgui.SliderInt(u8 '', kushatprocent, 1, 99)
+            imgui.SliderInt(u8 '', eatPercentMinLimit, 1, 99)
         end
         imgui.Separator()
-        imgui.Checkbox(u8 'Автохил', autoheal)
-        if autoheal.v then
+        imgui.Checkbox(u8 'Автохил', isAutoHealEnabled)
+        if isAutoHealEnabled.v then
             imgui.Text(u8 'Процент здоровья, при котором хиляться:')
-            imgui.SliderInt(' ', healprocent, 1, 99)
-            imgui.Combo(u8 'Выбор способа хила', healmtd, healList, -1)
+            imgui.SliderInt(' ', healPercentMinLimit, 1, 99)
+            imgui.Combo(u8 'Выбор способа хила', healMethod, healList, -1)
             imgui.PushItemWidth(50)
-            if healmtd.v == 1 then
-                imgui.InputText(u8 'Кол-во наркотиков', kolvodrugs)
+            if healMethod.v == 1 then
+                imgui.InputText(u8 'Кол-во наркотиков', drugsAmount)
             end
         end
         imgui.Separator()
 
-        if imgui.Checkbox(u8 'АнтиАфк', antiafk) then
-            antipause()
+        if imgui.Checkbox(u8 'АнтиАфк', antiAfk) then
+            antiPause()
         end
 
         --imgui.SetCursorPos(imgui.ImVec2(190,400))
         if imgui.Button(u8 'Сохранить настройки для персонажа', imgui.ImVec2(580, 30)) then
-            mainIni.config.autokushat = autokushat.v
-            mainIni.config.kushatprocent = kushatprocent.v
-            mainIni.config.eatmetod = eatMetod.v
-            mainIni.config.autoheal = autoheal.v
-            mainIni.config.healprocent = healprocent.v
-            mainIni.config.healmtd = healmtd.v
-            mainIni.config.kolvodrugs = kolvodrugs.v
+            mainIni.config.autokushat = isAutoEatEnabled.v
+            mainIni.config.kushatprocent = eatPercentMinLimit.v
+            mainIni.config.eatmetod = eatMethod.v
+            mainIni.config.autoheal = isAutoHealEnabled.v
+            mainIni.config.healprocent = healPercentMinLimit.v
+            mainIni.config.healmtd = healMethod.v
+            mainIni.config.kolvodrugs = drugsAmount.v
             inicfg.save(mainIni, 'auto_pd.ini')
             sampAddChatMessage('{00FF00}[BankHelper]{FFA500}Сохранил настройки автоеды/автохила', -1)
         end
@@ -649,14 +654,14 @@ function sampev.onServerMessage(color, message)
 
         end
         if message:find('Банковский чек') or message:find('Депозит в банке: ') then
-            if popolnenie.v then
+            if isDepositRefillEnabled.v then
                 setVirtualKeyDown(VK_N, true)
                 wait(400)
                 setVirtualKeyDown(VK_N, false)
                 wait(500)
                 sampSendDialogResponse(33, 1, deposit, false)
                 wait(1500)
-                sampSendDialogResponse(4498, 1, 1, sli.v)
+                sampSendDialogResponse(4498, 1, 1, depositRefillAmount.v)
                 wait(500)
                 sampCloseCurrentDialogWithButton(0)
             end
@@ -670,7 +675,7 @@ function sampev.onServerMessage(color, message)
         netnalogamashini = false
     end
     if message:find('У вас нет мешка с мясом') or message:find('У тебя нет') and not message:find('говорит') then
-        autokushat.v = false
+        isAutoEatEnabled.v = false
         if notf_pokushal.v then
             vkRequest('Ваша сытость: ' .. eat1 .. ', но у вас нет еды =(')
         end
@@ -727,49 +732,49 @@ function sampev.onShowDialog(dialogId, dialogStyle, dialogTitle, okButtonText, c
 end
 function saveCFG()
     --АвтоПароль
-    mainIni.config.password = pass.v
-    mainIni.config.autopassw = autopass.v
+    mainIni.config.password = bankCardPassword.v
+    mainIni.config.autopassw = isAutoPassword.v
     --АвтоНалоги
-    mainIni.config.autonalogbiznes = autonalogbiznes.v
-    mainIni.config.autonalogdoma = autonalogdoma.v
-    mainIni.config.autonalogmashini = autonalogmashini.v
-    mainIni.config.autonalogkomunalka = autonalogkomunalka.v
+    mainIni.config.autonalogbiznes = isPayBusinessTax.v
+    mainIni.config.autonalogdoma = isPayHouseTax.v
+    mainIni.config.autonalogmashini = isPayCarTax.v
+    mainIni.config.autonalogkomunalka = isPayCommunalPayment.v
     --Авто-Депозит
-    mainIni.config.sli = sli.v
-    mainIni.config.popolnenie = popolnenie.v
+    mainIni.config.sli = depositRefillAmount.v
+    mainIni.config.popolnenie = isDepositRefillEnabled.v
     inicfg.save(mainIni, 'auto_pd.ini')
     sampAddChatMessage('{00FF00}[BankHelper]{FFA500}Сохранил настройки для банка', -1)
 end
 function vosstanovleniecfg()
     --Автопополнение депозита
-    popolnenie = imgui.ImBool(mainIni.config.popolnenie)
+    isDepositRefillEnabled = imgui.ImBool(mainIni.config.popolnenie)
     --Автоввод пароля
-    autopass = imgui.ImBool(mainIni.config.autopassw)
-    pass = imgui.ImBuffer('' .. mainIni.config.password, 256)
+    isAutoPassword = imgui.ImBool(mainIni.config.autopassw)
+    bankCardPassword = imgui.ImBuffer('' .. mainIni.config.password, 256)
     --Автоналоги
-    autonalogbiznes = imgui.ImBool(mainIni.config.autonalogbiznes)
-    autonalogdoma = imgui.ImBool(mainIni.config.autonalogdoma)
-    autonalogmashini = imgui.ImBool(mainIni.config.autonalogmashini)
-    autonalogkomunalka = imgui.ImBool(mainIni.config.autonalogkomunalka)
+    isPayBusinessTax = imgui.ImBool(mainIni.config.autonalogbiznes)
+    isPayHouseTax = imgui.ImBool(mainIni.config.autonalogdoma)
+    isPayCarTax = imgui.ImBool(mainIni.config.autonalogmashini)
+    isPayCommunalPayment = imgui.ImBool(mainIni.config.autonalogkomunalka)
     kolvobisnes = imgui.ImBuffer('' .. mainIni.config.kolvobisnes, 256)
     kolvodoma = imgui.ImBuffer('' .. mainIni.config.kolvodoma, 256)
     kolvomashini = imgui.ImBuffer('' .. mainIni.config.kolvomashini, 256)
     --Автоеда
-    eatMetod = imgui.ImInt(mainIni.config.eatmetod)
-    kushatprocent = imgui.ImInt(mainIni.config.kushatprocent)
-    autokushat = imgui.ImBool(mainIni.config.autokushat)
+    eatMethod = imgui.ImInt(mainIni.config.eatmetod)
+    eatPercentMinLimit = imgui.ImInt(mainIni.config.kushatprocent)
+    isAutoEatEnabled = imgui.ImBool(mainIni.config.autokushat)
     --Автохил
-    autoheal = imgui.ImBool(mainIni.config.autoheal)
-    healmtd = imgui.ImInt(mainIni.config.healmtd)
-    healprocent = imgui.ImInt(mainIni.config.healprocent)
-    kolvodrugs = imgui.ImInt(mainIni.config.kolvodrugs)
+    isAutoHealEnabled = imgui.ImBool(mainIni.config.autoheal)
+    healMethod = imgui.ImInt(mainIni.config.healmtd)
+    healPercentMinLimit = imgui.ImInt(mainIni.config.healprocent)
+    drugsAmount = imgui.ImInt(mainIni.config.kolvodrugs)
     --Тема
     theme = imgui.ImInt(mainIni.config.theme)
     sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF}Восстановил все настройки с конфига!', -1)
 end
 --Antiafk by Ronny Evans
-function antipause()
-    if antiafk.v then
+function antiPause()
+    if antiAfk.v then
         sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF}AntiAFK включён', -1)
         memory.setuint8(7634870, 1, false)
         memory.setuint8(7635034, 1, false)
@@ -800,7 +805,7 @@ function onScriptTerminate(script, quitGame)
 end
 
 --украл у Aniki =)
-function apply_custom_style()
+function blueTheme()
     imgui.SwitchContext()
     local style = imgui.GetStyle()
     local colors = style.Colors
@@ -866,6 +871,7 @@ function apply_custom_style()
     colors[clr.TextSelectedBg] = ImVec4(0.26, 0.59, 0.98, 0.35)
     colors[clr.ModalWindowDarkening] = ImVec4(0.80, 0.80, 0.80, 0.35)
 end
+
 --helperLovli
 function redTheme()
     imgui.SwitchContext()
@@ -1086,46 +1092,50 @@ function darkRedTheme()
     style.WindowTitleAlign = imgui.ImVec2(0.5, 0.5)
     style.ButtonTextAlign = imgui.ImVec2(0.5, 0.5)
 
-    colors[clr.Text]                   = ImVec4(0.95, 0.96, 0.98, 1.00);
-    colors[clr.TextDisabled]           = ImVec4(0.29, 0.29, 0.29, 1.00);
-    colors[clr.WindowBg]               = ImVec4(0.14, 0.14, 0.14, 1.00);
-    colors[clr.ChildWindowBg]          = ImVec4(0.12, 0.12, 0.12, 1.00);
-    colors[clr.PopupBg]                = ImVec4(0.08, 0.08, 0.08, 0.94);
-    colors[clr.Border]                 = ImVec4(0.14, 0.14, 0.14, 1.00);
-    colors[clr.BorderShadow]           = ImVec4(1.00, 1.00, 1.00, 0.10);
-    colors[clr.FrameBg]                = ImVec4(0.22, 0.22, 0.22, 1.00);
-    colors[clr.FrameBgHovered]         = ImVec4(0.18, 0.18, 0.18, 1.00);
-    colors[clr.FrameBgActive]          = ImVec4(0.09, 0.12, 0.14, 1.00);
-    colors[clr.TitleBg]                = ImVec4(0.14, 0.14, 0.14, 0.81);
-    colors[clr.TitleBgActive]          = ImVec4(0.14, 0.14, 0.14, 1.00);
-    colors[clr.TitleBgCollapsed]       = ImVec4(0.00, 0.00, 0.00, 0.51);
-    colors[clr.MenuBarBg]              = ImVec4(0.20, 0.20, 0.20, 1.00);
-    colors[clr.ScrollbarBg]            = ImVec4(0.02, 0.02, 0.02, 0.39);
-    colors[clr.ScrollbarGrab]          = ImVec4(0.36, 0.36, 0.36, 1.00);
-    colors[clr.ScrollbarGrabHovered]   = ImVec4(0.18, 0.22, 0.25, 1.00);
-    colors[clr.ScrollbarGrabActive]    = ImVec4(0.24, 0.24, 0.24, 1.00);
-    colors[clr.ComboBg]                = ImVec4(0.24, 0.24, 0.24, 1.00);
-    colors[clr.CheckMark]              = ImVec4(1.00, 0.28, 0.28, 1.00);
-    colors[clr.SliderGrab]             = ImVec4(1.00, 0.28, 0.28, 1.00);
-    colors[clr.SliderGrabActive]       = ImVec4(1.00, 0.28, 0.28, 1.00);
-    colors[clr.Button]                 = ImVec4(1.00, 0.28, 0.28, 1.00);
-    colors[clr.ButtonHovered]          = ImVec4(1.00, 0.39, 0.39, 1.00);
-    colors[clr.ButtonActive]           = ImVec4(1.00, 0.21, 0.21, 1.00);
-    colors[clr.Header]                 = ImVec4(1.00, 0.28, 0.28, 1.00);
-    colors[clr.HeaderHovered]          = ImVec4(1.00, 0.39, 0.39, 1.00);
-    colors[clr.HeaderActive]           = ImVec4(1.00, 0.21, 0.21, 1.00);
-    colors[clr.ResizeGrip]             = ImVec4(1.00, 0.28, 0.28, 1.00);
-    colors[clr.ResizeGripHovered]      = ImVec4(1.00, 0.39, 0.39, 1.00);
-    colors[clr.ResizeGripActive]       = ImVec4(1.00, 0.19, 0.19, 1.00);
-    colors[clr.CloseButton]            = ImVec4(0.40, 0.39, 0.38, 0.16);
-    colors[clr.CloseButtonHovered]     = ImVec4(0.40, 0.39, 0.38, 0.39);
-    colors[clr.CloseButtonActive]      = ImVec4(0.40, 0.39, 0.38, 1.00);
-    colors[clr.PlotLines]              = ImVec4(0.61, 0.61, 0.61, 1.00);
-    colors[clr.PlotLinesHovered]       = ImVec4(1.00, 0.43, 0.35, 1.00);
-    colors[clr.PlotHistogram]          = ImVec4(1.00, 0.21, 0.21, 1.00);
-    colors[clr.PlotHistogramHovered]   = ImVec4(1.00, 0.18, 0.18, 1.00);
-    colors[clr.TextSelectedBg]         = ImVec4(1.00, 0.32, 0.32, 1.00);
-    colors[clr.ModalWindowDarkening]   = ImVec4(0.26, 0.26, 0.26, 0.60);
+    colors[clr.Text] = ImVec4(0.95, 0.96, 0.98, 1.00);
+    colors[clr.TextDisabled] = ImVec4(0.29, 0.29, 0.29, 1.00);
+    colors[clr.WindowBg] = ImVec4(0.14, 0.14, 0.14, 1.00);
+    colors[clr.ChildWindowBg] = ImVec4(0.12, 0.12, 0.12, 1.00);
+    colors[clr.PopupBg] = ImVec4(0.08, 0.08, 0.08, 0.94);
+    colors[clr.Border] = ImVec4(0.14, 0.14, 0.14, 1.00);
+    colors[clr.BorderShadow] = ImVec4(1.00, 1.00, 1.00, 0.10);
+    colors[clr.FrameBg] = ImVec4(0.22, 0.22, 0.22, 1.00);
+    colors[clr.FrameBgHovered] = ImVec4(0.18, 0.18, 0.18, 1.00);
+    colors[clr.FrameBgActive] = ImVec4(0.09, 0.12, 0.14, 1.00);
+    colors[clr.TitleBg] = ImVec4(0.14, 0.14, 0.14, 0.81);
+    colors[clr.TitleBgActive] = ImVec4(0.14, 0.14, 0.14, 1.00);
+    colors[clr.TitleBgCollapsed] = ImVec4(0.00, 0.00, 0.00, 0.51);
+    colors[clr.MenuBarBg] = ImVec4(0.20, 0.20, 0.20, 1.00);
+    colors[clr.ScrollbarBg] = ImVec4(0.02, 0.02, 0.02, 0.39);
+    colors[clr.ScrollbarGrab] = ImVec4(0.36, 0.36, 0.36, 1.00);
+    colors[clr.ScrollbarGrabHovered] = ImVec4(0.18, 0.22, 0.25, 1.00);
+    colors[clr.ScrollbarGrabActive] = ImVec4(0.24, 0.24, 0.24, 1.00);
+    colors[clr.ComboBg] = ImVec4(0.24, 0.24, 0.24, 1.00);
+    colors[clr.CheckMark] = ImVec4(1.00, 0.28, 0.28, 1.00);
+    colors[clr.SliderGrab] = ImVec4(1.00, 0.28, 0.28, 1.00);
+    colors[clr.SliderGrabActive] = ImVec4(1.00, 0.28, 0.28, 1.00);
+    colors[clr.Button] = ImVec4(1.00, 0.28, 0.28, 1.00);
+    colors[clr.ButtonHovered] = ImVec4(1.00, 0.39, 0.39, 1.00);
+    colors[clr.ButtonActive] = ImVec4(1.00, 0.21, 0.21, 1.00);
+    colors[clr.Header] = ImVec4(1.00, 0.28, 0.28, 1.00);
+    colors[clr.HeaderHovered] = ImVec4(1.00, 0.39, 0.39, 1.00);
+    colors[clr.HeaderActive] = ImVec4(1.00, 0.21, 0.21, 1.00);
+    colors[clr.ResizeGrip] = ImVec4(1.00, 0.28, 0.28, 1.00);
+    colors[clr.ResizeGripHovered] = ImVec4(1.00, 0.39, 0.39, 1.00);
+    colors[clr.ResizeGripActive] = ImVec4(1.00, 0.19, 0.19, 1.00);
+    colors[clr.CloseButton] = ImVec4(0.40, 0.39, 0.38, 0.16);
+    colors[clr.CloseButtonHovered] = ImVec4(0.40, 0.39, 0.38, 0.39);
+    colors[clr.CloseButtonActive] = ImVec4(0.40, 0.39, 0.38, 1.00);
+    colors[clr.PlotLines] = ImVec4(0.61, 0.61, 0.61, 1.00);
+    colors[clr.PlotLinesHovered] = ImVec4(1.00, 0.43, 0.35, 1.00);
+    colors[clr.PlotHistogram] = ImVec4(1.00, 0.21, 0.21, 1.00);
+    colors[clr.PlotHistogramHovered] = ImVec4(1.00, 0.18, 0.18, 1.00);
+    colors[clr.TextSelectedBg] = ImVec4(1.00, 0.32, 0.32, 1.00);
+    colors[clr.ModalWindowDarkening] = ImVec4(0.26, 0.26, 0.26, 0.60);
+end
+
+function apply_custom_style()
+    blueTheme()
 end
 
 --by QRLK
