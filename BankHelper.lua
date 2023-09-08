@@ -22,6 +22,8 @@ local pokaz = false
 local netnalogabiz = true
 local netnalogamashini = true
 
+local updateUrl = 'https://gist.githubusercontent.com/TheMY3/9d339515be2e266e31d838e95974d491/raw'
+local contactUrl = 'https://gist.githubusercontent.com/TheMY3/9d339515be2e266e31d838e95974d491/raw'
 -- Cheat codes
 local menuCheatCode = 'pd'
 local menuChatCommand = 'apd'
@@ -148,7 +150,7 @@ function main()
     while not isSampAvailable() do
         wait(100)
     end
-    autoupdate("https://gist.githubusercontent.com/Andrey281/0b7e3f7707b2479db3f920d382a0385a/raw/", '[' .. string.upper(thisScript().name) .. ']: ', "http://vk.com/andreyneya")
+    autoupdate(updateUrl, '[' .. string.upper(thisScript().name) .. ']: ', contactUrl)
     sampAddChatMessage('{00FF00}[BankHelper v' .. thisScript().version .. ']: {FFFFFF}Активация меню / ' .. menuChatCommand .. ' или чит-код ' .. menuCheatCode, -1)
     sampAddChatMessage('{00FF00}[BankHelper v' .. thisScript().version .. ']: {FFFFFF}Author - {FF0000}Andrew_Medverson', -1)
     sampRegisterChatCommand(menuChatCommand, apd1)
@@ -602,7 +604,7 @@ function imgui.OnDrawFrame()
             inicfg.save(mainIni, 'auto_pd.ini')
         end
         if imgui.Button(u8 'Проверить обновление !', imgui.ImVec2(580, 30)) then
-            autoupdate("https://gist.githubusercontent.com/Andrey281/0b7e3f7707b2479db3f920d382a0385a/raw/", '[' .. string.upper(thisScript().name) .. ']: ', "http://vk.com/andreyneya")
+            autoupdate(updateUrl, '[' .. string.upper(thisScript().name) .. ']: ', contactUrl)
         end
         --imgui.BeginChild("##new", imgui.ImVec2(580, 300), true, imgui.WindowFlags.NoScrollbar)
         --imgui.Text(u8'История обновлений: ')
