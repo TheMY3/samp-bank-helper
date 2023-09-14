@@ -1,7 +1,7 @@
 script_name("BankHelper")
 script_version_number(230)
 script_version("7.0")
-script_authors("Andrew_Medverson")
+script_authors("TheMY3", "Andrew_Medverson")
 local requests = require 'requests'
 local sampev = require "lib.samp.events"
 require "lib.moonloader"
@@ -13,10 +13,13 @@ u8 = encoding.UTF8
 local mw = imgui.ImBool(false)
 local sw, sh = getScreenResolution()
 local popolnenieDeposit = tonumber(0)
+
+local allTaxesListItem = -1
+
 local biznes = -1
-local home = -1
+local houseListItem = -1
 local car = -1
-local komm = -1
+local communalPaymentListItem = -1
 local deposit = -1
 local pokaz = false
 local netnalogabiz = true
@@ -25,7 +28,6 @@ local netnalogamashini = true
 local updateUrl = 'https://gist.githubusercontent.com/TheMY3/9d339515be2e266e31d838e95974d491/raw'
 local contactUrl = 'https://gist.githubusercontent.com/TheMY3/9d339515be2e266e31d838e95974d491/raw'
 -- Cheat codes
-local menuCheatCode = 'pd'
 local menuChatCommand = 'apd'
 local bankCheatCode = 'oo'
 
@@ -150,18 +152,15 @@ function main()
     while not isSampAvailable() do
         wait(100)
     end
-    autoupdate(updateUrl, '[' .. string.upper(thisScript().name) .. ']: ', contactUrl)
-    sampAddChatMessage('{00FF00}[BankHelper v' .. thisScript().version .. ']: {FFFFFF}Активация меню / ' .. menuChatCommand .. ' или чит-код ' .. menuCheatCode, -1)
-    sampAddChatMessage('{00FF00}[BankHelper v' .. thisScript().version .. ']: {FFFFFF}Author - {FF0000}Andrew_Medverson', -1)
+    autoUpdate(updateUrl, '[' .. string.upper(thisScript().name) .. ']: ', contactUrl)
+    sampAddChatMessage('{00FF00}[' .. thisScript().name .. ' v' .. thisScript().version .. ']: {FFFFFF}Активация меню /' .. menuChatCommand, -1)
+    sampAddChatMessage('{00FF00}[' .. thisScript().name .. ' v' .. thisScript().version .. ']: {FFFFFF}Authors - {FF0000}' .. unpack(thisScript().authors), -1)
     sampRegisterChatCommand(menuChatCommand, apd1)
     while true do
         wait(0)
 
         if mw.v == false then
             imgui.Process = false
-        end
-        if testCheat(menuCheatCode) then
-            apd1()
         end
         if theme.v == 0 then
             blueTheme()
@@ -232,12 +231,6 @@ function main()
 
         if testCheat(bankCheatCode) and not sampIsChatInputActive() and not sampIsDialogActive() then
             sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF} Пытаюсь провести банковские операции', -1)
-            setVirtualKeyDown(VK_N, true)
-            wait(500)
-            setVirtualKeyDown(VK_N, false)
-            wait(1000)
-            sampCloseCurrentDialogWithButton(0)
-            wait(1000)
             if isPayBusinessTax.v then
                 if biznes ~= -1 then
                     setVirtualKeyDown(VK_N, true)
@@ -277,39 +270,46 @@ function main()
 
             end
             wait(300)
+
+            houseCount = 0
             if isPayHouseTax.v then
-                if home ~= -1 then
-                    setVirtualKeyDown(VK_N, true)
+                if houseListItem ~= -1 then
+                    setVirtualKeyDown(VK_LMENU, true)
                     wait(300)
-                    setVirtualKeyDown(VK_N, false)
-                    sampSendDialogResponse(33, 1, home, false)
-                    wait(1000)
-                    domov = sampGetListboxItemsCount()
+                    setVirtualKeyDown(VK_LMENU, false)
                     wait(300)
-                    sampSendDialogResponse(7238, 1, d, false)
-                    wait(300)
-                    sampSendDialogResponse(783, 1, 0, false)
-                    wait(300)
+                    sampSendDialogResponse(33, 1, houseListItem, false)
+                    wait(200)
+                    houseCount = sampGetListboxItemsCount()
+                    wait(200)
                     sampCloseCurrentDialogWithButton(0)
-                    wait(300)
-                    if domov ~= 1 then
-                        for d = 0, tonumber(domov - 2) do
-                            setVirtualKeyDown(VK_N, true)
+                    wait(200)
+                    sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF} Найдено домов: ' .. houseCount, -1)
+                    if houseCount ~= 0 then
+                        for d = 0, tonumber(houseCount - 1) do
+                            setVirtualKeyDown(VK_LMENU, true)
                             wait(300)
-                            setVirtualKeyDown(VK_N, false)
-                            sampSendDialogResponse(33, 1, home, false)
+                            setVirtualKeyDown(VK_LMENU, false)
+                            wait(500)
+                            sampSendDialogResponse(33, 1, houseListItem, false)
                             wait(300)
-                            sampSendDialogResponse(7238, 1, tonumber(d + 1), false)
+                            sampSendDialogResponse(7238, 1, d, false)
                             wait(300)
                             sampSendDialogResponse(783, 1, 0, false)
                             wait(300)
                             sampCloseCurrentDialogWithButton(0)
                             wait(300)
                         end
+                        sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF} Все налоги на дома оплачены', -1)
+                    else
+                        sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF} Дома не найдены', -1)
                     end
+                else
+                    sampAddChatMessage('{00FF00}[BankHelper]{FFFFFF} Пункт на оплату налога на дом не найден', -1)
                 end
                 wait(300)
             end
+
             if isPayCarTax.v then
                 if car ~= -1 then
                     setVirtualKeyDown(VK_N, true)
@@ -346,14 +346,17 @@ function main()
                 end
 
             end
+
             netnalogamashini = true
+
             if isPayCommunalPayment.v then
-                if komm ~= -1 then
-                    for g = 0, tonumber(domov - 1) do
-                        setVirtualKeyDown(VK_N, true)
+                if communalPaymentListItem ~= -1 then
+                    for g = 0, tonumber(houseCount - 1) do
+                        setVirtualKeyDown(VK_LMENU, true)
                         wait(300)
-                        setVirtualKeyDown(VK_N, false)
-                        sampSendDialogResponse(33, 1, komm, false)
+                        setVirtualKeyDown(VK_LMENU, false)
+                        wait(500)
+                        sampSendDialogResponse(33, 1, communalPaymentListItem, false)
                         wait(300)
                         sampSendDialogResponse(7238, 1, g, false)
                         wait(300)
@@ -604,7 +607,7 @@ function imgui.OnDrawFrame()
             inicfg.save(mainIni, 'auto_pd.ini')
         end
         if imgui.Button(u8 'Проверить обновление !', imgui.ImVec2(580, 30)) then
-            autoupdate(updateUrl, '[' .. string.upper(thisScript().name) .. ']: ', contactUrl)
+            autoUpdate(updateUrl, '[' .. string.upper(thisScript().name) .. ']: ', contactUrl)
         end
         --imgui.BeginChild("##new", imgui.ImVec2(580, 300), true, imgui.WindowFlags.NoScrollbar)
         --imgui.Text(u8'История обновлений: ')
@@ -700,30 +703,27 @@ function sampev.onShowDialog(dialogId, dialogStyle, dialogTitle, okButtonText, c
     local countdeposit = 0
     for n in dialogText:gmatch('[^\r\n]+') do
         if n:find('Оплатить коммуналку') then
-            komm = countkomm
-        end
-        if n:find('Оплатить налог на транспорт') then
-
+            communalPaymentListItem = countkomm
+        elseif n:find('Оплатить налог на транспорт') then
             car = countcar
-        end
-        if n:find('Оплатить налоги на дом') then
-
-            home = counthome
-        end
-        if n:find('Оплатить налоги на бизнес') then
-
+        elseif n:find('Оплатить налоги на дом') then
+            houseListItem = counthome
+        elseif n:find('Оплатить налоги на бизнес') then
             biznes = countbiznes
-        end
-        if n:find('Пополнить депозит') then
-
+        elseif n:find('Оплата всех налогов') then
+            -- todo
+            allTaxesListItem = countbiznes -- 15252
+        elseif n:find('Пополнить депозит') then
             deposit = countdeposit
         end
+
+
+        -- Change to 1 variable
         countbiznes = countbiznes + 1
         counthome = counthome + 1
         countcar = countcar + 1
         countkomm = countkomm + 1
         countdeposit = countdeposit + 1
-
     end
     if dialogId == 9762 then
         netnalogabiz = true
@@ -1141,35 +1141,35 @@ function apply_custom_style()
 end
 
 --by QRLK
-function autoupdate(json_url, prefix, url)
-    local dlstatus = require('moonloader').download_status
+function autoUpdate(json_url, prefix, url)
+    local dlStatus = require('moonloader').download_status
     local json = getWorkingDirectory() .. '\\' .. thisScript().name .. '-version.json'
     if doesFileExist(json) then
         os.remove(json)
     end
     downloadUrlToFile(json_url, json,
             function(id, status, p1, p2)
-                if status == dlstatus.STATUSEX_ENDDOWNLOAD then
+                if status == dlStatus.STATUSEX_ENDDOWNLOAD then
                     if doesFileExist(json) then
                         local f = io.open(json, 'r')
                         if f then
                             local info = decodeJson(f:read('*a'))
-                            updatelink = info.updateurl
-                            updateversion = info.latest
+                            updateLink = info.updateurl
+                            updateVersion = info.latest
                             new = info.new
                             f:close()
                             os.remove(json)
-                            if updateversion ~= thisScript().version then
+                            if updateVersion ~= thisScript().version then
                                 lua_thread.create(function(prefix)
-                                    local dlstatus = require('moonloader').download_status
+                                    local dlStatus = require('moonloader').download_status
                                     local color = -1
-                                    sampAddChatMessage(('{00FF00}[BankHelper]: {FFFFFF}Обнаружено обновление. Пытаюсь обновиться c ' .. thisScript().version .. ' на ' .. updateversion), color)
+                                    sampAddChatMessage(('{00FF00}[BankHelper]: {FFFFFF}Обнаружено обновление. Пытаюсь обновиться c ' .. thisScript().version .. ' на ' .. updateVersion), color)
                                     wait(250)
-                                    downloadUrlToFile(updatelink, thisScript().path,
+                                    downloadUrlToFile(updateLink, thisScript().path,
                                             function(id3, status1, p13, p23)
-                                                if status1 == dlstatus.STATUS_DOWNLOADINGDATA then
+                                                if status1 == dlStatus.STATUS_DOWNLOADINGDATA then
                                                     print(string.format('Загружено %d из %d.', p13, p23))
-                                                elseif status1 == dlstatus.STATUS_ENDDOWNLOADDATA then
+                                                elseif status1 == dlStatus.STATUS_ENDDOWNLOADDATA then
                                                     print('Загрузка обновления завершена.')
                                                     sampAddChatMessage((prefix .. 'Обновление завершено!'), color)
                                                     goupdatestatus = true
@@ -1178,7 +1178,7 @@ function autoupdate(json_url, prefix, url)
                                                         thisScript():reload()
                                                     end)
                                                 end
-                                                if status1 == dlstatus.STATUSEX_ENDDOWNLOAD then
+                                                if status1 == dlStatus.STATUSEX_ENDDOWNLOAD then
                                                     if goupdatestatus == nil then
                                                         sampAddChatMessage((prefix .. 'Обновление прошло неудачно. Запускаю устаревшую версию..'), color)
                                                         update = false
