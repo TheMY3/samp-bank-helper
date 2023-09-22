@@ -1,6 +1,6 @@
 script_name("BankHelper")
-script_version_number(231)
-script_version("7.1")
+script_version_number(232)
+script_version("7.2")
 script_authors("TheMY3", "Andrew_Medverson")
 local requests = require 'requests'
 local sampev = require "lib.samp.events"
@@ -16,7 +16,7 @@ local popolnenieDeposit = tonumber(0)
 
 local allTaxesListItem = -1
 
-local biznes = -1
+local businessListItem = -1
 local houseListItem = -1
 local car = -1
 local communalPaymentListItem = -1
@@ -25,8 +25,12 @@ local pokaz = false
 local netnalogabiz = true
 local netnalogamashini = true
 
+local configFileName = 'auto_pd.ini'
+local cmdPrefix = '[' .. thisScript().name .. ']: '
+local chatPrefix = '{00FF00}[' .. thisScript().name .. ']{FFFFFF} '
+
 local updateUrl = 'https://gist.githubusercontent.com/TheMY3/9d339515be2e266e31d838e95974d491/raw'
-local contactUrl = 'https://gist.githubusercontent.com/TheMY3/9d339515be2e266e31d838e95974d491/raw'
+local discordName = 'TheMY3'
 -- Cheat codes
 local menuChatCommand = 'apd'
 local bankCheatCode = 'oo'
@@ -55,6 +59,7 @@ local mainIni = inicfg.load({
         depositP = tonumber(0),
         zarabotal = tonumber(0),
         schetDeposit = tonumber(0),
+        isPayAllTaxes = false,
         autonalogbiznes = false,
         autonalogdoma = false,
         autonalogmashini = false,
@@ -69,7 +74,7 @@ local mainIni = inicfg.load({
         theme = 1,
         silentMode = false
     }
-}, 'auto_pd.ini')
+}, configFileName)
 local silentMode = imgui.ImBool(mainIni.config.silentMode)
 --VK settings
 local group_token = imgui.ImBuffer('' .. mainIni.vk.group_token, 256)
@@ -90,6 +95,7 @@ local depositRefillAmount = imgui.ImInt(mainIni.config.sli)
 local isAutoPassword = imgui.ImBool(mainIni.config.autopassw)
 local bankCardPassword = imgui.ImBuffer('' .. mainIni.config.password, 256)
 --Автоналоги
+local isPayAllTaxes = imgui.ImBool(mainIni.config.isPayAllTaxes)
 local isPayBusinessTax = imgui.ImBool(mainIni.config.autonalogbiznes)
 local isPayHouseTax = imgui.ImBool(mainIni.config.autonalogdoma)
 local isPayCarTax = imgui.ImBool(mainIni.config.autonalogmashini)
@@ -108,16 +114,15 @@ local theme = imgui.ImInt(mainIni.config.theme)
 --АнтиАфк
 local antiAfk = imgui.ImBool(false)
 
-local status1 = inicfg.load(mainIni, 'auto_pd.ini')
-if not doesFileExist('moonloader/config/auto_pd.ini') then
-    inicfg.save(mainIni, 'auto_pd.ini')
+local status1 = inicfg.load(mainIni, configFileName)
+if not doesFileExist('moonloader/config/' .. configFileName) then
+    inicfg.save(mainIni, configFileName)
 end
 
 local eatList = {
     u8 'Чипсы',
     u8 'Оленина',
     u8 'Мешок с мясом',
-    u8 'Еда дома',
     u8 'Еда с расстояния',
     u8 'Рыбка'
 }
@@ -152,9 +157,10 @@ function main()
     while not isSampAvailable() do
         wait(100)
     end
-    autoUpdate(updateUrl, '[' .. thisScript().name .. ']: ', contactUrl)
-    sampAddChatMessage('{00FF00}[' .. thisScript().name .. ' v' .. thisScript().version .. ']: {FFFFFF}Активация меню /' .. menuChatCommand, -1)
-    sampAddChatMessage('{00FF00}[' .. thisScript().name .. ' v' .. thisScript().version .. ']: {FFFFFF}Authors - {FF0000}' .. unpack(thisScript().authors), -1)
+    autoUpdate(thisScript().name, cmdPrefix, discordName)
+    sampAddChatMessage(chatPrefix .. 'Активация меню /' .. menuChatCommand, -1)
+    sampAddChatMessage(chatPrefix .. 'Версия: ' .. thisScript().version .. '. Авторы: ' .. table.concat(thisScript().authors, ', '), -1)
+
     sampRegisterChatCommand(menuChatCommand, apd1)
     while true do
         wait(0)
@@ -182,9 +188,9 @@ function main()
                 if isAutoEatEnabled.v then
                     chatMessage = 'сытость опустилась до ' .. math.floor(eat1) .. ', начинаю кушать'
                     if silentMode.v then
-                        sampfuncsLog('[' .. thisScript().name .. '] ' .. chatMessage)
+                        sampfuncsLog(cmdPrefix .. chatMessage)
                     else
-                        sampAddChatMessage('{00FF00}[' .. thisScript().name .. ']{FFFFFF} ' .. chatMessage, -1)
+                        sampAddChatMessage(chatPrefix .. chatMessage, -1)
                     end
                     wait(500)
                     if eatMethod.v == 0 then
@@ -203,22 +209,11 @@ function main()
                             vkRequest('Вы покушали мясо с мешка. Ваша сытость: ' .. math.floor(eat1))
                         end
                     elseif eatMethod.v == 3 then
-                        sampSendChat('/home')
-                        wait(900)
-                        sampSendDialogResponse(174, 1, 1, false)
-                        wait(900)
-                        sampSendDialogResponse(2431, 1, 1, false)
-                        wait(900)
-                        sampSendDialogResponse(185, 1, 6, false)
-                        if notf_pokushal.v then
-                            vkRequest('Вы покушали с дома. Ваша сытость: ' .. math.floor(eat1))
-                        end
-                    elseif eatMethod.v == 4 then
                         sampSendClickTextdraw(648)
                         if notf_pokushal.v then
                             vkRequest('Вы покушали еду с расстояния. Ваша сытость: ' .. math.floor(eat1))
                         end
-                    elseif eatMethod.v == 5 then
+                    elseif eatMethod.v == 4 then
                         sampSendChat('/jfish')
                         if notf_pokushal.v then
                             vkRequest('Вы покушали рыбку. Ваша сытость: ' .. math.floor(eat1))
@@ -230,13 +225,29 @@ function main()
         end
 
         if testCheat(bankCheatCode) and not sampIsChatInputActive() and not sampIsDialogActive() then
-            sampAddChatMessage('{00FF00}[' .. thisScript().name .. ']{FFFFFF} Пытаюсь провести банковские операции', -1)
-            if isPayBusinessTax.v then
-                if biznes ~= -1 then
+            sampAddChatMessage(chatPrefix .. 'Пытаюсь провести банковские операции', -1)
+
+            if isPayAllTaxes.v then
+                if allTaxesListItem ~= -1 then
                     setVirtualKeyDown(VK_N, true)
                     wait(500)
                     setVirtualKeyDown(VK_N, false)
-                    sampSendDialogResponse(33, 1, biznes, false)
+                    sampSendDialogResponse(33, 1, allTaxesListItem, false)
+                    wait(1000)
+                    sampSendDialogResponse(15252, 1, 0, false)
+                    wait(500)
+                    sampCloseCurrentDialogWithButton(0)
+                    wait(500)
+                    allTaxesListItem = -1
+                end
+            end
+
+            if isPayBusinessTax.v then
+                if businessListItem ~= -1 then
+                    setVirtualKeyDown(VK_N, true)
+                    wait(500)
+                    setVirtualKeyDown(VK_N, false)
+                    sampSendDialogResponse(33, 1, businessListItem, false)
                     wait(1000)
                     sampSendDialogResponse(9762, 1, 0, false)
                     wait(1000)
@@ -253,7 +264,7 @@ function main()
                                 setVirtualKeyDown(VK_N, true)
                                 wait(500)
                                 setVirtualKeyDown(VK_N, false)
-                                sampSendDialogResponse(33, 1, biznes, false)
+                                sampSendDialogResponse(33, 1, businessListItem, false)
                                 wait(500)
                                 sampSendDialogResponse(9762, 1, 0, false)
                                 wait(500)
@@ -264,10 +275,9 @@ function main()
                             end
                         end
                     end
-                    biznes = -1
+                    businessListItem = -1
                     bizov = -1
                 end
-
             end
             wait(300)
 
@@ -284,7 +294,7 @@ function main()
                     wait(200)
                     sampCloseCurrentDialogWithButton(0)
                     wait(200)
-                    sampAddChatMessage('{00FF00}[' .. thisScript().name .. ']{FFFFFF} Найдено домов: ' .. houseCount, -1)
+                    sampAddChatMessage(chatPrefix .. 'Найдено домов: ' .. houseCount, -1)
                     if houseCount ~= 0 then
                         for d = 0, tonumber(houseCount - 1) do
                             setVirtualKeyDown(VK_LMENU, true)
@@ -300,12 +310,12 @@ function main()
                             sampCloseCurrentDialogWithButton(0)
                             wait(300)
                         end
-                        sampAddChatMessage('{00FF00}[' .. thisScript().name .. ']{FFFFFF} Все налоги на дома оплачены', -1)
+                        sampAddChatMessage(chatPrefix .. 'Все налоги на дома оплачены', -1)
                     else
-                        sampAddChatMessage('{00FF00}[' .. thisScript().name .. ']{FFFFFF} Дома не найдены', -1)
+                        sampAddChatMessage(chatPrefix .. 'Дома не найдены', -1)
                     end
                 else
-                    sampAddChatMessage('{00FF00}[' .. thisScript().name .. ']{FFFFFF} Пункт на оплату налога на дом не найден', -1)
+                    sampAddChatMessage(chatPrefix .. 'Пункт на оплату налога на дом не найден', -1)
                 end
                 wait(300)
             end
@@ -373,7 +383,7 @@ function main()
         if isAutoHealEnabled.v then
             if getCharHealth(PLAYER_PED) ~= 0 and getCharHealth(PLAYER_PED) < healPercentMinLimit.v then
                 if healMethod.v == 0 then
-                    sampAddChatMessage('{00FF00}[' .. thisScript().name .. ']{FFFFFF}чичас отхиляюсь', -1)
+                    sampAddChatMessage(chatPrefix .. 'чичас отхиляюсь', -1)
                     wait(300)
                     sampSendChat('/usemed')
                     wait(2000)
@@ -382,7 +392,7 @@ function main()
                     end
                 end
                 if healMethod.v == 1 then
-                    sampAddChatMessage('{00FF00}[' .. thisScript().name .. ']{FFFFFF}чичас отхиляюсь', -1)
+                    sampAddChatMessage(chatPrefix .. 'чичас отхиляюсь', -1)
                     wait(300)
                     sampSendChat('/usedrugs ' .. drugsAmount.v)
                     wait(2000)
@@ -391,7 +401,7 @@ function main()
                     end
                 end
                 if healMethod.v == 2 then
-                    sampAddChatMessage('{00FF00}[' .. thisScript().name .. ']{FFFFFF}чичас отхиляюсь', -1)
+                    sampAddChatMessage(chatPrefix .. 'чичас отхиляюсь', -1)
                     wait(300)
                     sampSendChat('/adrenaline')
                     wait(2000)
@@ -400,7 +410,7 @@ function main()
                     end
                 end
                 if healMethod.v == 3 then
-                    sampAddChatMessage('{00FF00}[' .. thisScript().name .. ']{FFFFFF}чичас отхиляюсь', -1)
+                    sampAddChatMessage(chatPrefix .. 'чичас отхиляюсь', -1)
                     wait(300)
                     sampSendChat('/beer')
                     wait(2000)
@@ -409,7 +419,7 @@ function main()
                     end
                 end
                 if healMethod.v == 4 then
-                    sampAddChatMessage('{00FF00}[' .. thisScript().name .. ']{FFFFFF}чичас отхиляюсь', -1)
+                    sampAddChatMessage(chatPrefix .. 'чичас отхиляюсь', -1)
                     wait(300)
                     sampSendClickTextdraw(645)
                     wait(2000)
@@ -427,7 +437,7 @@ function imgui.OnDrawFrame()
     imgui.SetNextWindowPos(imgui.ImVec2((sw / 2), (sh / 2)), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5), imgui.WindowFlags.AlwaysAutoResize)
     imgui.Begin(thisScript().name .. ' V' .. thisScript().version, mw, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.MenuBar)
     imgui.BeginMenuBar()
-    imgui.SetCursorPosX(20)
+    imgui.SetCursorPosX(40)
     if imgui.MenuItem(u8 'Помощник для банка') then
         menu = 1
     end
@@ -440,7 +450,7 @@ function imgui.OnDrawFrame()
         menu = 3
     end
 
-    if imgui.MenuItem(u8 'О скрипте/Обновления') then
+    if imgui.MenuItem(u8 'О скрипте') then
         menu = 4
     end
     imgui.EndMenuBar()
@@ -476,15 +486,20 @@ function imgui.OnDrawFrame()
 
         imgui.Text(u8 'Для активации нажмите ' .. bankCheatCode)
 
-        imgui.Checkbox(u8 'АвтоОплата Бизов', isPayBusinessTax)
-        imgui.Checkbox(u8 'АвтоОплата Домов', isPayHouseTax)
-        if isPayHouseTax.v then
-            imgui.Checkbox(u8 'АвтоОплата Коммуналки', isPayCommunalPayment)
+
+        imgui.Checkbox(u8 'АвтоОплата всех налогов - доступно только членам семей с улучшением {B83434}"Быстрые налоги"', isPayAllTaxes)
+        if isPayAllTaxes.v == false then
+            imgui.Checkbox(u8 'АвтоОплата Бизов', isPayBusinessTax)
+            imgui.Checkbox(u8 'АвтоОплата Домов', isPayHouseTax)
+            if isPayHouseTax.v then
+                imgui.Checkbox(u8 'АвтоОплата Коммуналки', isPayCommunalPayment)
+            end
+            if isPayHouseTax.v == false then
+                isPayCommunalPayment.v = false
+            end
+            imgui.Checkbox(u8 'АвтоОплата Машин', isPayCarTax)
         end
-        if isPayHouseTax.v == false then
-            isPayCommunalPayment.v = false
-        end
-        imgui.Checkbox(u8 'АвтоОплата Машин', isPayCarTax)
+
         imgui.Separator()
         if imgui.Button(u8 'Всего пополнилось: $' .. mainIni.config.depositP, imgui.ImVec2(285, 20)) then
             sampAddChatMessage('Всего пополнилось: {B83434}$' .. mainIni.config.depositP, -1)
@@ -492,7 +507,7 @@ function imgui.OnDrawFrame()
         imgui.SameLine()
         if imgui.Button(u8 'Очистить пополнение', imgui.ImVec2(285, 20)) then
             mainIni.config.depositP = tonumber(0)
-            inicfg.save(mainIni, 'auto_pd.ini')
+            inicfg.save(mainIni, configFileName)
             sampAddChatMessage('Успешно удалил сумму пополнений', -1)
         end
         imgui.Separator()
@@ -502,12 +517,12 @@ function imgui.OnDrawFrame()
         imgui.SameLine()
         if imgui.Button(u8 'Очистить заработанное', imgui.ImVec2(285, 20)) then
             mainIni.config.zarabotal = tonumber(0)
-            inicfg.save(mainIni, 'auto_pd.ini')
+            inicfg.save(mainIni, configFileName)
             sampAddChatMessage('Успешно удалил заработанное', -1)
         end
         --imgui.SetCursorPos(imgui.ImVec2(190,410))
         if imgui.Button(u8 'Сохранить все настройки', imgui.ImVec2(580, 30)) then
-            saveCFG()
+            saveConfig()
         end
     elseif menu == 2 then
         imgui.Checkbox(u8 'Не отправлять сообщения в чат', silentMode)
@@ -544,8 +559,8 @@ function imgui.OnDrawFrame()
             mainIni.config.healprocent = healPercentMinLimit.v
             mainIni.config.healmtd = healMethod.v
             mainIni.config.kolvodrugs = drugsAmount.v
-            inicfg.save(mainIni, 'auto_pd.ini')
-            sampAddChatMessage('{00FF00}[' .. thisScript().name .. ']{FFA500}Сохранил настройки автоеды/автохила', -1)
+            inicfg.save(mainIni, configFileName)
+            sampAddChatMessage(chatPrefix .. '{FFA500}Сохранил настройки автоеды/автохила', -1)
         end
     elseif menu == 3 then
         if imgui.Button(u8 'Как это все настроить блин ?', imgui.ImVec2(580, 30)) then
@@ -584,8 +599,8 @@ function imgui.OnDrawFrame()
             mainIni.vk.notf_pohililsya = notf_pohililsya.v
             mainIni.vk.script_umer = script_umer.v
             mainIni.vk.group_id = group_id.v
-            inicfg.save(mainIni, 'auto_pd.ini')
-            sampAddChatMessage('{00FF00}[' .. thisScript().name .. ']{FFA500}Сохранил настройки уведомлений для VK', -1)
+            inicfg.save(mainIni, configFileName)
+            sampAddChatMessage(chatPrefix .. '{FFA500}Сохранил настройки уведомлений для VK', -1)
         end
     elseif menu == 4 then
         imgui.SetCursorPosX(240)
@@ -597,17 +612,17 @@ function imgui.OnDrawFrame()
             os.execute('explorer https://vk.com/govnocode_lua')
         end
         if imgui.Button(u8 'Восстановить все настройки с конфига', imgui.ImVec2(580, 30)) then
-            vosstanovleniecfg()
+            restoreConfig()
         end
-        imgui.Text(u8 'Выбор темы меню: ')
+        imgui.Text(u8 'Выбор темы меню:')
         imgui.PushItemWidth(450)
         imgui.SameLine()
         if imgui.Combo(u8 '', theme, themeList, -1) then
             mainIni.config.theme = theme.v
-            inicfg.save(mainIni, 'auto_pd.ini')
+            inicfg.save(mainIni, configFileName)
         end
-        if imgui.Button(u8 'Проверить обновление !', imgui.ImVec2(580, 30)) then
-            autoUpdate(updateUrl, '[' .. string.upper(thisScript().name) .. ']: ', contactUrl)
+        if imgui.Button(u8 'Проверить обновление!', imgui.ImVec2(580, 30)) then
+            autoUpdate(thisScript().name, cmdPrefix, discordName)
         end
         --imgui.BeginChild("##new", imgui.ImVec2(580, 300), true, imgui.WindowFlags.NoScrollbar)
         --imgui.Text(u8'История обновлений: ')
@@ -640,17 +655,17 @@ function sampev.onServerMessage(color, message)
                 vkRequest('Вы положили на депозит: ' .. popolnenieDeposit .. '$ | За все время положили ' .. depositP .. '$')
             end
             mainIni.config.depositP = tonumber(depositP)
-            inicfg.save(mainIni, 'auto_pd.ini')
+            inicfg.save(mainIni, configFileName)
         end
         if message:find('Депозит в банке: %$(%d+)') then
             currentDepositAmount = message:match('Депозит в банке: %$(%d+)')
             currentDepositProfit = tonumber(mainIni.config.zarabotal) + tonumber(currentDepositAmount)
             mainIni.config.zarabotal = tonumber(currentDepositProfit)
-            inicfg.save(mainIni, 'auto_pd.ini')
+            inicfg.save(mainIni, configFileName)
         end
         if message:find('Текущая сумма на депозите: ') then
             mainIni.config.schetDeposit = message:match('Текущая сумма на депозите: %$(%d+)')
-            inicfg.save(mainIni, 'auto_pd.ini')
+            inicfg.save(mainIni, configFileName)
         end
         if message:find('Депозит в банке: %$(%d+)') or message:find('Банковский чек') or message:find('Сумма к выплате: ') or message:find('Текущая сумма в банке: ') or message:find('Текущая сумма на депозите: ') or message:find('В данный момент у вас ') then
             if notf_payday.v then
@@ -709,10 +724,9 @@ function sampev.onShowDialog(dialogId, dialogStyle, dialogTitle, okButtonText, c
         elseif n:find('Оплатить налоги на дом') then
             houseListItem = counthome
         elseif n:find('Оплатить налоги на бизнес') then
-            biznes = countbiznes
+            businessListItem = countbiznes
         elseif n:find('Оплата всех налогов') then
-            -- todo
-            allTaxesListItem = countbiznes -- 15252
+            allTaxesListItem = countbiznes
         elseif n:find('Пополнить депозит') then
             deposit = countdeposit
         end
@@ -732,28 +746,37 @@ function sampev.onShowDialog(dialogId, dialogStyle, dialogTitle, okButtonText, c
         netnalogamashini = true
     end
 end
-function saveCFG()
+function saveConfig()
     --АвтоПароль
     mainIni.config.password = bankCardPassword.v
     mainIni.config.autopassw = isAutoPassword.v
     --АвтоНалоги
-    mainIni.config.autonalogbiznes = isPayBusinessTax.v
-    mainIni.config.autonalogdoma = isPayHouseTax.v
-    mainIni.config.autonalogmashini = isPayCarTax.v
-    mainIni.config.autonalogkomunalka = isPayCommunalPayment.v
+    mainIni.config.isPayAllTaxes = isPayAllTaxes.v
+    if isPayAllTaxes.v then
+        mainIni.config.autonalogbiznes = false
+        mainIni.config.autonalogdoma = false
+        mainIni.config.autonalogmashini = false
+        mainIni.config.autonalogkomunalka = false
+    else
+        mainIni.config.autonalogbiznes = isPayBusinessTax.v
+        mainIni.config.autonalogdoma = isPayHouseTax.v
+        mainIni.config.autonalogmashini = isPayCarTax.v
+        mainIni.config.autonalogkomunalka = isPayCommunalPayment.v
+    end
     --Авто-Депозит
     mainIni.config.sli = depositRefillAmount.v
     mainIni.config.popolnenie = isDepositRefillEnabled.v
-    inicfg.save(mainIni, 'auto_pd.ini')
-    sampAddChatMessage('{00FF00}[' .. thisScript().name .. ']{FFA500}Сохранил настройки для банка', -1)
+    inicfg.save(mainIni, configFileName)
+    sampAddChatMessage(chatPrefix .. '{FFA500}Сохранил настройки для банка', -1)
 end
-function vosstanovleniecfg()
+function restoreConfig()
     --Автопополнение депозита
     isDepositRefillEnabled = imgui.ImBool(mainIni.config.popolnenie)
     --Автоввод пароля
     isAutoPassword = imgui.ImBool(mainIni.config.autopassw)
     bankCardPassword = imgui.ImBuffer('' .. mainIni.config.password, 256)
     --Автоналоги
+    isPayAllTaxes = imgui.ImBool(mainIni.config.isPayAllTaxes)
     isPayBusinessTax = imgui.ImBool(mainIni.config.autonalogbiznes)
     isPayHouseTax = imgui.ImBool(mainIni.config.autonalogdoma)
     isPayCarTax = imgui.ImBool(mainIni.config.autonalogmashini)
@@ -772,19 +795,19 @@ function vosstanovleniecfg()
     drugsAmount = imgui.ImInt(mainIni.config.kolvodrugs)
     --Тема
     theme = imgui.ImInt(mainIni.config.theme)
-    sampAddChatMessage('{00FF00}[' .. thisScript().name .. ']{FFFFFF}Восстановил все настройки с конфига!', -1)
+    sampAddChatMessage(chatPrefix .. 'Восстановил все настройки с конфига!', -1)
 end
 --Antiafk by Ronny Evans
 function antiPause()
     if antiAfk.v then
-        sampAddChatMessage('{00FF00}[' .. thisScript().name .. ']{FFFFFF}AntiAFK включён', -1)
+        sampAddChatMessage(chatPrefix .. 'AntiAFK включён', -1)
         memory.setuint8(7634870, 1, false)
         memory.setuint8(7635034, 1, false)
         -- memory.fill(int address,int value,uint size,[bool unprotect=false])
         memory.fill(7623723, 144, 8, false)
         memory.fill(5499528, 144, 6, false)
     else
-        sampAddChatMessage('{00FF00}[' .. thisScript().name .. ']{FFFFFF}AntiAFK выключен', -1)
+        sampAddChatMessage(chatPrefix .. 'AntiAFK выключен', -1)
         memory.setuint8(7634870, 0, false)
         memory.setuint8(7635034, 0, false)
         memory.hex2bin('0F 84 7B 01 00 00', 7623723, 8)
@@ -1141,13 +1164,13 @@ function apply_custom_style()
 end
 
 --by QRLK
-function autoUpdate(json_url, prefix, url)
+function autoUpdate(name, prefix)
     local dlStatus = require('moonloader').download_status
-    local json = getWorkingDirectory() .. '\\' .. thisScript().name .. '-version.json'
+    local json = getWorkingDirectory() .. '\\' .. name .. '-version.json'
     if doesFileExist(json) then
         os.remove(json)
     end
-    downloadUrlToFile(json_url, json,
+    downloadUrlToFile(updateUrl, json,
             function(id, status, p1, p2)
                 if status == dlStatus.STATUSEX_ENDDOWNLOAD then
                     if doesFileExist(json) then
@@ -1162,8 +1185,7 @@ function autoUpdate(json_url, prefix, url)
                             if updateVersion ~= thisScript().version then
                                 lua_thread.create(function(prefix)
                                     local dlStatus = require('moonloader').download_status
-                                    local color = -1
-                                    sampAddChatMessage((prefix .. 'Обнаружено обновление. Пытаюсь обновиться c ' .. thisScript().version .. ' на ' .. updateVersion), color)
+                                    sampAddChatMessage(chatPrefix .. 'Обнаружено обновление. Пытаюсь обновиться c ' .. thisScript().version .. ' на ' .. updateVersion, -1)
                                     wait(250)
                                     downloadUrlToFile(updateLink, thisScript().path,
                                             function(id3, status1, p13, p23)
@@ -1180,22 +1202,22 @@ function autoUpdate(json_url, prefix, url)
                                                 end
                                                 if status1 == dlStatus.STATUSEX_ENDDOWNLOAD then
                                                     if goupdatestatus == nil then
-                                                        sampAddChatMessage((prefix .. 'Обновление прошло неудачно. Запускаю устаревшую версию..'), color)
+                                                        sampAddChatMessage(chatPrefix .. 'Обновление прошло неудачно. Запускаю устаревшую версию..', -1)
                                                         update = false
                                                     end
                                                 end
                                             end
                                     )
-                                end, prefix
+                                end, cmdPrefix
                                 )
                             else
                                 update = false
 
-                                sampAddChatMessage((prefix .. 'Обновление не требуется.'), color)
+                                sampAddChatMessage(chatPrefix .. 'Обновление не требуется.', -1)
                             end
                         end
                     else
-                        print('v' .. thisScript().version .. ': Не могу проверить обновление. Смиритесь или проверьте самостоятельно на ' .. url)
+                        print('v' .. thisScript().version .. ': Не могу проверить обновление. Смиритесь или напишите в Discord: ' .. discordName)
                         update = false
                     end
                 end
